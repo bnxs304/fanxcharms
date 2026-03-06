@@ -1,0 +1,135 @@
+.track-order {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.track-order__title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--text);
+}
+
+.track-order__intro {
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+}
+
+.track-order__form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.track-order__field label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 0.35rem;
+  color: var(--text);
+}
+
+.track-order__field input {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 1rem;
+  background: var(--bg-card);
+}
+
+.track-order__field input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.track-order__error {
+  font-size: 0.9rem;
+  color: #b91c1c;
+}
+
+.track-order__submit {
+  padding: 0.75rem 1.25rem;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.track-order__submit:hover:not(:disabled) {
+  background: var(--primary-dark);
+}
+
+.track-order__submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.track-order__result {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.track-order__result h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: var(--text);
+}
+
+.track-order__status {
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+
+.track-order__meta,
+.track-order__address {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.track-order__items {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0.5rem;
+  font-size: 0.9rem;
+}
+
+.track-order__items li {
+  padding: 0.25rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.track-order__items li:last-child {
+  border-bottom: none;
+}
+
+.track-order__total {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-top: 0.75rem;
+  color: var(--text);
+}
+
+.track-order__back {
+  font-size: 0.95rem;
+}
+
+.track-order__back a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.track-order__back a:hover {
+  text-decoration: underline;
+}

@@ -1,0 +1,57 @@
+.admin-layout {
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+.admin-layout__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.5rem;
+  background: var(--text);
+  color: white;
+}
+
+.admin-layout__brand {
+  font-weight: 600;
+  color: white;
+  text-decoration: none;
+}
+
+.admin-layout__brand:hover {
+  color: var(--primary-light);
+}
+
+.admin-layout__links {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.admin-layout__links a {
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.admin-layout__links a:hover {
+  color: white;
+}
+
+.admin-layout__signout {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  color: white;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.admin-layout__signout:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.admin-layout__main {
+  padding: 0;
+}

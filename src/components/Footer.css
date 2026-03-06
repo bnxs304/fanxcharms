@@ -1,0 +1,31 @@
+.footer {
+  background: var(--primary-pale);
+  margin-top: 4rem;
+  border-top: 1px solid rgba(124, 58, 237, 0.15);
+}
+
+.footer__bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.25rem 1.5rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.footer__copy {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.footer__legal a {
+  color: var(--text-muted);
+}
+
+.footer__legal a:hover {
+  color: var(--primary);
+}

@@ -1,0 +1,33 @@
+.shop {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 0;
+}
+
+.shop__title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: var(--text);
+}
+
+.shop__subtitle {
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+}
+
+.shop__loading,
+.shop__empty {
+  color: var(--text-muted);
+}
+
+.shop__error {
+  color: #b91c1c;
+  margin-bottom: 1rem;
+}
+
+.shop__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
