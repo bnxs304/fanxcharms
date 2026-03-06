@@ -78,7 +78,8 @@
 
 .admin__field input,
 .admin__field textarea,
-.admin__field select {
+.admin__field select,
+.admin__input {
   width: 100%;
   padding: 0.6rem 0.75rem;
   border: 1px solid var(--border);

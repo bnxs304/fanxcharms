@@ -1,5 +1,5 @@
-import { Link, useLocation } from 'react-router-dom'
-import { useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 import { useCart } from '../context/CartContext'
 import PromoBar from './PromoBar'
 import './Header.css'
@@ -23,9 +23,23 @@ function IconCart() {
 }
 export default function Header() {
   const { cartCount } = useCart()
-  const [searchQuery, setSearchQuery] = useState('')
+  const navigate = useNavigate()
   const location = useLocation()
   const search = location.search || ''
+  const searchParams = new URLSearchParams(search)
+  const qFromUrl = searchParams.get('q') || ''
+  const [searchQuery, setSearchQuery] = useState(qFromUrl)
+  useEffect(() => { setSearchQuery(qFromUrl) }, [qFromUrl])
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault()
+    const q = searchQuery.trim()
+    const params = new URLSearchParams(searchParams)
+    if (q) params.set('q', q)
+    else params.delete('q')
+    const queryString = params.toString()
+    navigate(`/shop${queryString ? `?${queryString}` : ''}`)
+  }
 
   const navItems = [
     { to: '/', label: 'HOME', match: (path, qs) => path === '/' && !qs },
@@ -53,7 +67,7 @@ export default function Header() {
             </Link>
           </div>
         </div>
-        <div className="header__search-wrap">
+        <form className="header__search-wrap" onSubmit={handleSearchSubmit} role="search">
           <span className="header__search-icon" aria-hidden>
             <IconSearch />
           </span>
@@ -63,9 +77,9 @@ export default function Header() {
             placeholder="Search for products"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            aria-label="Search"
+            aria-label="Search products"
           />
-        </div>
+        </form>
         <nav className="header__nav">
           {navItems.map(({ to, label, match }) => {
             const isActive = match && match(location.pathname, search)

@@ -114,6 +114,22 @@
   border-bottom: none;
 }
 
+.track-order__tracking {
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.track-order__tracking-number {
+  font-family: ui-monospace, monospace;
+  letter-spacing: 0.02em;
+}
+
+.track-order__shipping {
+  font-size: 0.95rem;
+  margin-top: 0.5rem;
+  color: var(--text-muted);
+}
+
 .track-order__total {
   font-size: 1.1rem;
   font-weight: 600;

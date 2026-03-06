@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { getOrderByIdFromFirestore, updateOrderStatus } from '../../lib/ordersService'
+import { getOrderByIdFromFirestore, updateOrderStatus, updateOrderTracking } from '../../lib/ordersService'
 import './Admin.css'
 
 const STATUS_OPTIONS = [
@@ -20,12 +20,21 @@ export default function AdminOrderDetail() {
   const [order, setOrder] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [trackingNumber, setTrackingNumber] = useState('')
+  const [carrier, setCarrier] = useState('')
+  const [savingTracking, setSavingTracking] = useState(false)
 
   useEffect(() => {
     if (!user || !id) return
     let cancelled = false
     getOrderByIdFromFirestore(id)
-      .then((data) => { if (!cancelled) setOrder(data) })
+      .then((data) => {
+        if (!cancelled) {
+          setOrder(data)
+          setTrackingNumber(data?.trackingNumber ?? '')
+          setCarrier(data?.carrier ?? '')
+        }
+      })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [user, id])
@@ -49,6 +58,19 @@ export default function AdminOrderDetail() {
     }
   }
 
+  const handleSaveTracking = async () => {
+    if (!order) return
+    setSavingTracking(true)
+    try {
+      await updateOrderTracking(order.id, { trackingNumber, carrier })
+      setOrder({ ...order, trackingNumber, carrier })
+    } catch (e) {
+      alert(e.message || 'Update failed')
+    } finally {
+      setSavingTracking(false)
+    }
+  }
+
   if (authLoading || !user) return null
   if (loading) return <div className="admin"><p>Loading order…</p></div>
   if (!order) return <div className="admin"><p>Order not found.</p><Link to="/admin/orders">Back to orders</Link></div>
@@ -66,6 +88,7 @@ export default function AdminOrderDetail() {
         <p><strong>Email:</strong> {order.email}</p>
         {order.name && <p><strong>Name:</strong> {order.name}</p>}
         <p><strong>Address:</strong> {order.address}</p>
+        {order.shippingMethod && <p><strong>Shipping:</strong> {order.shippingMethod}{order.shippingCost != null && order.shippingCost > 0 ? ` (£${Number(order.shippingCost).toFixed(2)})` : ''}</p>}
         <p><strong>Total:</strong> £{Number(order.total).toFixed(2)} {order.currency}</p>
         <p><strong>Placed:</strong> {order.createdAt ? new Date(order.createdAt).toLocaleString() : '—'}</p>
 
@@ -82,6 +105,31 @@ export default function AdminOrderDetail() {
             ))}
           </select>
         </div>
+
+        <h3 className="admin__order-detail-sub">Tracking</h3>
+        <div className="admin__field">
+          <label>Carrier</label>
+          <input
+            type="text"
+            value={carrier}
+            onChange={(e) => setCarrier(e.target.value)}
+            placeholder="e.g. Royal Mail, DPD"
+            className="admin__input"
+          />
+        </div>
+        <div className="admin__field">
+          <label>Tracking number</label>
+          <input
+            type="text"
+            value={trackingNumber}
+            onChange={(e) => setTrackingNumber(e.target.value)}
+            placeholder="e.g. 1234567890"
+            className="admin__input"
+          />
+        </div>
+        <button type="button" className="admin__btn admin__btn--small" onClick={handleSaveTracking} disabled={savingTracking}>
+          {savingTracking ? 'Saving…' : 'Save tracking'}
+        </button>
 
         <h3 className="admin__order-detail-sub">Items</h3>
         <ul className="admin__order-items">

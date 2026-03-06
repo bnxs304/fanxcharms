@@ -16,7 +16,7 @@ export default function Home() {
           Thanks for your order! We'll get it ready for you.
           {orderId && (
             <span className="home__banner-order">
-              {' '}Order ref: <strong>{orderId}</strong>. You can <Link to="/track-your-order">track your order</Link> with this reference and your email.
+              {' '}Order ref: <strong>{orderId}</strong>. A confirmation email has been sent to you. You can <Link to="/track-your-order">track your order</Link> with this reference and your email.
             </span>
           )}
         </div>

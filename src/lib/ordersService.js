@@ -16,10 +16,14 @@ function snapshotToOrder(snap) {
     email: d.email ?? '',
     address: d.address ?? '',
     name: d.name ?? '',
+    shippingMethod: d.shippingMethod ?? '',
+    shippingCost: Number(d.shippingCost) ?? 0,
     items: Array.isArray(d.items) ? d.items : [],
     total: Number(d.total) ?? 0,
     currency: d.currency ?? 'GBP',
     status: d.status ?? 'pending',
+    trackingNumber: d.trackingNumber ?? '',
+    carrier: d.carrier ?? '',
     createdAt: d.createdAt?.toDate?.()?.toISOString?.() ?? d.createdAt,
     updatedAt: d.updatedAt?.toDate?.()?.toISOString?.() ?? d.updatedAt,
   }
@@ -27,9 +31,8 @@ function snapshotToOrder(snap) {
 
 /**
  * Create an order. Returns { orderId }.
- * @param {{ email: string, address: string, name?: string, items: Array<{id, name, price, quantity, size?, image?}>, total: number, currency?: string }}
  */
-export async function createOrder({ email, address, name, items, total, currency = 'GBP' }) {
+export async function createOrder({ email, address, name, shippingMethod, shippingCost, items, total, currency = 'GBP' }) {
   const res = await fetch(`${API_URL}/api/orders`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -37,6 +40,8 @@ export async function createOrder({ email, address, name, items, total, currency
       email: email.trim(),
       address: address.trim(),
       name: name != null ? String(name).trim() : '',
+      shippingMethod: shippingMethod || 'free-uk',
+      shippingCost: Number(shippingCost) || 0,
       items,
       total: Number(total),
       currency,
@@ -87,6 +92,17 @@ export async function updateOrderStatus(id, status) {
   const ref = doc(db, ORDERS_COLLECTION, id)
   await updateDoc(ref, {
     status: String(status),
+    updatedAt: serverTimestamp(),
+  })
+}
+
+/** Admin: update order tracking (carrier + tracking number). */
+export async function updateOrderTracking(id, { trackingNumber, carrier }) {
+  if (!isConfigured || !db) throw new Error('Firebase not configured')
+  const ref = doc(db, ORDERS_COLLECTION, id)
+  await updateDoc(ref, {
+    trackingNumber: trackingNumber != null ? String(trackingNumber).trim() : '',
+    carrier: carrier != null ? String(carrier).trim() : '',
     updatedAt: serverTimestamp(),
   })
 }

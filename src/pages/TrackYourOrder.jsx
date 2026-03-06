@@ -84,6 +84,15 @@ export default function TrackYourOrder() {
           <p className="track-order__status">
             Status: <strong>{STATUS_LABELS[order.status] ?? order.status}</strong>
           </p>
+          {(order.trackingNumber || order.carrier) && (
+            <p className="track-order__tracking">
+              {order.carrier && <strong>{order.carrier}</strong>}
+              {order.carrier && order.trackingNumber && ' — '}
+              {order.trackingNumber && (
+                <span className="track-order__tracking-number">{order.trackingNumber}</span>
+              )}
+            </p>
+          )}
           <p className="track-order__meta">
             Placed on {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : '—'}
             {order.name && ` · ${order.name}`}
@@ -96,6 +105,9 @@ export default function TrackYourOrder() {
               </li>
             ))}
           </ul>
+          {(order.shippingCost != null && order.shippingCost > 0) && (
+            <p className="track-order__shipping">Shipping: £{Number(order.shippingCost).toFixed(2)}</p>
+          )}
           <p className="track-order__total">Total: £{Number(order.total).toFixed(2)}</p>
         </div>
       )}
