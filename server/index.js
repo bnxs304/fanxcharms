@@ -80,6 +80,10 @@ const corsOptions = { origin: corsOrigins }
 app.use(cors(corsOptions))
 app.use(express.json({ limit: '256kb' }))
 
+app.get('/', (req, res) => {
+  res.json({ message: 'Fan X Charms API. Use the frontend URL to browse the site. Health: /api/health' })
+})
+
 app.get('/api/health', (req, res) => {
   res.json({
     ok: true,
