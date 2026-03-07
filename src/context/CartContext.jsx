@@ -1,10 +1,25 @@
-import { createContext, useContext, useReducer } from 'react'
+import { createContext, useContext, useReducer, useEffect } from 'react'
 
 const CartContext = createContext(null)
+const CART_STORAGE_KEY = 'fanxcharms_cart'
 
 function capQuantity(qty, max) {
   if (max == null || max <= 0) return qty
   return Math.min(Math.max(0, qty), max)
+}
+
+function getStoredCart() {
+  try {
+    const raw = localStorage.getItem(CART_STORAGE_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter(
+      (i) => i && typeof i.id !== 'undefined' && typeof i.quantity === 'number' && typeof i.price === 'number'
+    )
+  } catch {
+    return []
+  }
 }
 
 function cartReducer(state, action) {
@@ -49,7 +64,11 @@ function cartReducer(state, action) {
 }
 
 export function CartProvider({ children }) {
-  const [cart, dispatch] = useReducer(cartReducer, [])
+  const [cart, dispatch] = useReducer(cartReducer, [], () => getStoredCart())
+
+  useEffect(() => {
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart))
+  }, [cart])
 
   const addToCart = (item) => dispatch({ type: 'ADD', payload: item })
   const removeFromCart = (id, size) => dispatch({ type: 'REMOVE', payload: { id, size } })
