@@ -1,10 +1,31 @@
+import { useState, useEffect } from 'react'
 import './PromoBar.css'
 
+const PROMOS = [
+  { text: 'FREE UK SHIPPING!', className: 'promo-bar__left' },
+  { text: 'WORLDWIDE SHIPPING AVAILABLE!', className: 'promo-bar__right' },
+]
+
 export default function PromoBar() {
+  const [activeIndex, setActiveIndex] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => {
+      setActiveIndex((i) => (i + 1) % PROMOS.length)
+    }, 4000)
+    return () => clearInterval(id)
+  }, [])
+
   return (
     <div className="promo-bar">
-      <span className="promo-bar__left">FREE UK SHIPPING!</span>
-      <span className="promo-bar__right">WORLDWIDE SHIPPING AVAILABLE!</span>
+      {PROMOS.map((promo, i) => (
+        <span
+          key={i}
+          className={`promo-bar__item ${promo.className} ${i === activeIndex ? 'promo-bar__item--active' : ''}`}
+          aria-hidden={i !== activeIndex}
+        >
+          {promo.text}
+        </span>
+      ))}
     </div>
   )
 }

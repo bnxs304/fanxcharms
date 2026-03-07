@@ -15,6 +15,13 @@
   opacity: 0.9;
 }
 
+@media (max-width: 640px) {
+  .home__banner {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+  }
+}
+
 .home {
   width: 100%;
   max-width: 1200px;
@@ -29,85 +36,90 @@
   background: var(--primary-pale);
   border-radius: var(--radius-lg);
   position: relative;
-  overflow: hidden;
-}
-
-.whats-new__graphic-img {
-  position: absolute;
-  left: -0.5rem;
-  top: 50%;
-  transform: translateY(-50%) rotate(-8deg);
-  max-height: clamp(120px, 25vw, 200px);
-  width: auto;
-  object-fit: contain;
-  pointer-events: none;
-  z-index: 0;
+  overflow: visible;
 }
 
 .whats-new__content {
   position: relative;
   z-index: 1;
-  padding-left: clamp(0px, 18vw, 180px);
+}
+
+.whats-new__header {
+  text-align: center;
+  margin-bottom: 2rem;
 }
 
 .whats-new__welcome {
-  font-size: clamp(0.9rem, 2vw, 1rem);
+  font-family: var(--font-display);
+  font-size: clamp(1.35rem, 4vw, 1.75rem);
   font-weight: 600;
-  letter-spacing: 0.04em;
   color: var(--text);
   margin-bottom: 0.35rem;
+  letter-spacing: 0.02em;
 }
 
 .whats-new__update {
-  font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+  font-size: clamp(0.9rem, 2vw, 1rem);
   font-weight: 500;
-  letter-spacing: 0.03em;
-  color: var(--text);
-  margin-bottom: 1.5rem;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
 }
 
 .whats-new__loading {
+  text-align: center;
   color: var(--text-muted);
   margin-bottom: 1rem;
 }
 
 .whats-new__error {
+  text-align: center;
   color: #b91c1c;
   margin-bottom: 1rem;
+}
+
+.whats-new__graphic-wrap {
+  position: absolute;
+  left: 5%; 
+  top: 1rem;
+  transform: translateX(-50%);
+  z-index: 2;
+  pointer-events: none;
+  perspective: 1000px;
+  animation: whats-new-float 4s ease-in-out infinite;
+}
+
+@keyframes whats-new-float {
+  0%, 100% {
+    transform: translateX(-50%) translateY(0) rotateY(-3deg) rotateX(2deg);
+  }
+  50% {
+    transform: translateX(-50%) translateY(-4px) rotateY(3deg) rotateX(-2deg);
+  }
+}
+
+.whats-new__graphic-img {
+  height: clamp(100px, 18vw, 200px);
+  width: auto;
+  max-width: min(90vw, 280px);
+  object-fit: contain;
+  display: block;
 }
 
 .whats-new__grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1.25rem;
-  margin-bottom: 2rem;
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+
+/* Mobile-only: horizontal infinite scroll (hidden on desktop) */
+.whats-new__scroll-wrap {
+  display: none;
 }
 
 @media (max-width: 900px) {
   .whats-new__grid {
     grid-template-columns: repeat(2, 1fr);
-  }
-  .whats-new__graphic-img {
-    max-height: clamp(80px, 18vw, 140px);
-    left: 0;
-  }
-  .whats-new__content {
-    padding-left: clamp(60px, 22vw, 140px);
-  }
-}
-
-@media (max-width: 600px) {
-  .whats-new__content {
-    padding-left: 0;
-  }
-  .whats-new__graphic-img {
-    position: relative;
-    transform: none;
-    top: auto;
-    left: auto;
-    max-height: 80px;
-    margin-bottom: 1rem;
-    display: block;
   }
 }
 
@@ -117,18 +129,247 @@
   }
 }
 
+/* Mobile: keep graphic from overlapping welcome/content */
+@media (max-width: 768px) {
+  .home {
+    padding: 0 1rem;
+    margin-top: 0.5rem;
+  }
+  .whats-new {
+    margin: 1rem 0;
+    padding: 1.25rem 1rem 2rem;
+    border-radius: var(--radius);
+    box-shadow: 0 2px 12px rgba(124, 58, 237, 0.08);
+  }
+  .whats-new__graphic-wrap {
+    left: 50%;
+    top: 0.75rem;
+  }
+  .whats-new__graphic-img {
+    height: clamp(44px, 12vw, 56px);
+    max-width: min(85vw, 140px);
+  }
+  .whats-new__content {
+    padding-top: 3rem;
+  }
+  .whats-new__header {
+    margin-bottom: 1.25rem;
+  }
+  .whats-new__welcome {
+    font-size: clamp(1.15rem, 4.5vw, 1.5rem);
+  }
+  .whats-new__update {
+    font-size: clamp(0.8rem, 2.5vw, 0.95rem);
+  }
+  .whats-new__grid {
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .whats-new__card-name {
+    font-size: 0.9rem;
+    padding: 0.75rem 0.85rem;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .whats-new__footer {
+    padding-top: 0.85rem;
+  }
+  .whats-new__social-icon {
+    width: 36px;
+    height: 36px;
+  }
+  .whats-new__social-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+  .whats-new__social-handle {
+    font-size: 0.85rem;
+  }
+  .whats-new__grid {
+    display: none;
+  }
+  .whats-new__scroll-wrap {
+    display: block;
+    margin-bottom: 1rem;
+  }
+  .whats-new__scroll-wrap {
+    padding: 0 0.75rem;
+  }
+  .whats-new__scroll-inner {
+    display: flex;
+    flex-direction: row;
+    gap: 0.75rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    padding: 1.25rem 0.75rem 1.25rem 0.75rem;
+    perspective: 900px;
+  }
+  .whats-new__scroll-inner::-webkit-scrollbar {
+    display: none;
+  }
+  .whats-new__scroll-set {
+    display: flex;
+    flex-direction: row;
+    gap: 0.75rem;
+    flex-shrink: 0;
+    scroll-snap-align: start;
+  }
+  .whats-new__scroll-wrap .whats-new__card {
+    flex: 0 0 240px;
+    width: 240px;
+    min-width: 240px;
+    scroll-snap-align: center;
+    transform-style: preserve-3d;
+    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.4s ease;
+    transform: scale(0.92);
+    opacity: 0.88;
+  }
+  .whats-new__scroll-wrap .whats-new__card--focused {
+    transform: scale(1.08);
+    opacity: 1;
+    z-index: 2;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(124, 58, 237, 0.1);
+  }
+  .whats-new__scroll-wrap .whats-new__card--focused:hover {
+    transform: scale(1.1) translateZ(4px);
+    box-shadow: 0 12px 28px rgba(124, 58, 237, 0.18);
+  }
+  .whats-new__scroll-wrap .whats-new__card:hover {
+    opacity: 0.95;
+  }
+  .whats-new__scroll-wrap .whats-new__card-image-wrap {
+    aspect-ratio: 1;
+  }
+  .whats-new__scroll-wrap .whats-new__card-name {
+    font-size: 0.9rem;
+    padding: 0.65rem 0.65rem 0.75rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .whats-new__scroll-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  .whats-new__scroll-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    min-width: 44px;
+    height: 44px;
+    padding: 0 0.5rem;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: var(--primary);
+    cursor: pointer;
+    transition: color 0.2s, opacity 0.2s;
+  }
+  .whats-new__scroll-btn:hover {
+    color: var(--primary-dark);
+    opacity: 0.85;
+  }
+  .whats-new__scroll-btn:active {
+    opacity: 0.7;
+  }
+  .whats-new__scroll-btn svg {
+    width: 24px;
+    height: 24px;
+  }
+  .whats-new__scroll-track {
+    position: relative;
+    display: flex;
+    width: 104px;
+    height: 10px;
+    background: rgba(124, 58, 237, 0.12);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .whats-new__scroll-thumb {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: calc(100% / var(--total, 4));
+    background: var(--primary);
+    border-radius: 8px;
+    margin: 2px;
+    transition: transform 0.25s ease-out;
+    transform: translateX(calc(var(--focused-index, 0) * 100%));
+    pointer-events: none;
+  }
+  .whats-new__scroll-segment {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    z-index: 1;
+  }
+  .whats-new__scroll-segment:hover {
+    background: rgba(124, 58, 237, 0.08);
+  }
+}
+
+@media (max-width: 480px) {
+  .home {
+    padding: 0 0.75rem;
+    margin-top: 0.25rem;
+  }
+  .whats-new {
+    margin: 0.75rem 0;
+    padding: 1rem 0.75rem 1.5rem;
+  }
+  .whats-new__content {
+    padding-top: 2.75rem;
+  }
+  .whats-new__header {
+    margin-bottom: 1rem;
+  }
+  .whats-new__card-name {
+    font-size: 0.85rem;
+    padding: 0.65rem 0.75rem;
+  }
+  .whats-new__scroll-wrap .whats-new__card {
+    flex: 0 0 200px;
+    width: 200px;
+    min-width: 200px;
+  }
+  .whats-new__scroll-wrap .whats-new__card-name {
+    font-size: 0.85rem;
+    padding: 0.55rem 0.55rem 0.65rem;
+  }
+}
+
 .whats-new__card {
   display: flex;
   flex-direction: column;
-  background: var(--primary-pale);
+  background: var(--bg-card);
   border-radius: var(--radius);
   overflow: hidden;
-  border: 2px solid rgba(124, 58, 237, 0.2);
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   transition: box-shadow 0.2s, transform 0.2s;
 }
 
 .whats-new__card:hover {
-  box-shadow: 0 8px 24px rgba(124, 58, 237, 0.2);
+  box-shadow: 0 8px 24px rgba(124, 58, 237, 0.15);
   transform: translateY(-2px);
 }
 
@@ -136,7 +377,7 @@
   position: relative;
   aspect-ratio: 1;
   overflow: hidden;
-  background: white;
+  background: var(--bg);
   border-radius: var(--radius) var(--radius) 0 0;
 }
 
@@ -150,19 +391,27 @@
   position: absolute;
   top: 0.5rem;
   right: 0.5rem;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.7);
   color: white;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 600;
   padding: 0.35rem 0.6rem;
   border-radius: var(--radius);
 }
 
 .whats-new__card-name {
-  padding: 0.75rem 1rem;
-  font-size: 0.9rem;
+  padding: 0.85rem 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: var(--text);
+  line-height: 1.35;
+}
+
+.whats-new__footer {
+  padding-top: 1rem;
+  border-top: 1px solid rgba(124, 58, 237, 0.15);
+  display: flex;
+  justify-content: center;
 }
 
 .whats-new__social {
@@ -175,17 +424,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   color: var(--text);
   border-radius: 50%;
-  background: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transition: color 0.2s, transform 0.2s;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  transition: color 0.2s, transform 0.2s, border-color 0.2s;
 }
 
 .whats-new__social-icon:hover {
   color: var(--primary);
+  border-color: var(--primary-light);
   transform: scale(1.05);
 }
 

@@ -21,6 +21,23 @@ function IconCart() {
     </svg>
   )
 }
+function IconMenu() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 6h16" />
+      <path d="M4 12h16" />
+      <path d="M4 18h16" />
+    </svg>
+  )
+}
+function IconClose() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 6 6 18" />
+      <path d="m6 6 12 12" />
+    </svg>
+  )
+}
 export default function Header() {
   const { cartCount } = useCart()
   const navigate = useNavigate()
@@ -29,7 +46,9 @@ export default function Header() {
   const searchParams = new URLSearchParams(search)
   const qFromUrl = searchParams.get('q') || ''
   const [searchQuery, setSearchQuery] = useState(qFromUrl)
+  const [navOpen, setNavOpen] = useState(false)
   useEffect(() => { setSearchQuery(qFromUrl) }, [qFromUrl])
+  useEffect(() => { setNavOpen(false) }, [location.pathname, search])
 
   const handleSearchSubmit = (e) => {
     e.preventDefault()
@@ -61,13 +80,22 @@ export default function Header() {
             <span className="header__subtitle">SHOP</span>
           </Link>
           <div className="header__icons header__icons--right">
+            <button
+              type="button"
+              className="header__nav-toggle"
+              onClick={() => setNavOpen((o) => !o)}
+              aria-expanded={navOpen}
+              aria-label={navOpen ? 'Close menu' : 'Open menu'}
+            >
+              {navOpen ? <IconClose /> : <IconMenu />}
+            </button>
             <Link to="/cart" className="header__icon-btn header__cart" aria-label="Cart">
               <IconCart />
               {cartCount > 0 && <span className="header__cart-badge">{cartCount}</span>}
             </Link>
           </div>
         </div>
-        <form className="header__search-wrap" onSubmit={handleSearchSubmit} role="search">
+        <form className="header__search-wrap header__search-wrap--desktop" onSubmit={handleSearchSubmit} role="search">
           <span className="header__search-icon" aria-hidden>
             <IconSearch />
           </span>
@@ -80,7 +108,35 @@ export default function Header() {
             aria-label="Search products"
           />
         </form>
-        <nav className="header__nav">
+        <div className="header__mobile-bar">
+          <button
+            type="button"
+            className="header__nav-toggle"
+            onClick={() => setNavOpen((o) => !o)}
+            aria-expanded={navOpen}
+            aria-label={navOpen ? 'Close menu' : 'Open menu'}
+          >
+            {navOpen ? <IconClose /> : <IconMenu />}
+          </button>
+          <form className="header__search-wrap header__search-wrap--mobile" onSubmit={handleSearchSubmit} role="search">
+            <span className="header__search-icon" aria-hidden>
+              <IconSearch />
+            </span>
+            <input
+              type="search"
+              className="header__search header__search--mobile"
+              placeholder="Search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              aria-label="Search products"
+            />
+          </form>
+          <Link to="/cart" className="header__icon-btn header__cart" aria-label="Cart">
+            <IconCart />
+            {cartCount > 0 && <span className="header__cart-badge">{cartCount}</span>}
+          </Link>
+        </div>
+        <nav className="header__nav header__nav--desktop" aria-label="Main">
           {navItems.map(({ to, label, match }) => {
             const isActive = match && match(location.pathname, search)
             return (
@@ -94,6 +150,31 @@ export default function Header() {
             )
           })}
         </nav>
+        <div
+          className={`header__nav-overlay ${navOpen ? 'header__nav-overlay--open' : ''}`}
+          aria-hidden={!navOpen}
+          onClick={() => setNavOpen(false)}
+        >
+          <nav
+            className="header__nav header__nav--dropdown"
+            aria-label="Main"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {navItems.map(({ to, label, match }) => {
+              const isActive = match && match(location.pathname, search)
+              return (
+                <Link
+                  key={label}
+                  to={to}
+                  className={`header__nav-link ${isActive ? 'header__nav-link--active' : ''}`}
+                  onClick={() => setNavOpen(false)}
+                >
+                  {label}
+                </Link>
+              )
+            })}
+          </nav>
+        </div>
       </header>
     </>
   )
