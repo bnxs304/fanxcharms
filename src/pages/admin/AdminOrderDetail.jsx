@@ -10,6 +10,8 @@ const STATUS_OPTIONS = [
   { value: 'processing', label: 'Processing' },
   { value: 'shipped', label: 'Shipped' },
   { value: 'delivered', label: 'Delivered' },
+  { value: 'refunded', label: 'Refunded' },
+  { value: 'canceled', label: 'Canceled' },
 ]
 
 export default function AdminOrderDetail() {
@@ -93,7 +95,7 @@ export default function AdminOrderDetail() {
         <p><strong>Placed:</strong> {order.createdAt ? new Date(order.createdAt).toLocaleString() : '—'}</p>
 
         <div className="admin__field">
-          <label>Status</label>
+          <label>Status {(order.status === 'pending' || !order.status) && <span className="admin__label-hint">(unpaid)</span>}</label>
           <select
             value={order.status}
             onChange={(e) => handleStatusChange(e.target.value)}

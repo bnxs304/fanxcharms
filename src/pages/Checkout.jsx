@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useCart } from '../context/CartContext'
 import { createOrder } from '../lib/ordersService'
@@ -32,6 +32,8 @@ function validateCheckout({ email, confirmEmail, address, postcode, countryCode 
 export default function Checkout() {
   const { cart, cartTotal, clearCart } = useCart()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const canceled = searchParams.get('canceled') === '1'
   const [email, setEmail] = useState('')
   const [confirmEmail, setConfirmEmail] = useState('')
   const [address, setAddress] = useState('')
@@ -166,9 +168,8 @@ export default function Checkout() {
         orderId,
         description: `Fan X Charms – ${cart.length} item(s)`,
         success_url: `${window.location.origin}/?order=success&orderId=${encodeURIComponent(orderId)}`,
-        cancel_url: `${window.location.origin}/checkout`,
+        cancel_url: `${window.location.origin}/checkout?canceled=1`,
       })
-      clearCart()
       window.location.href = url
     } catch (err) {
       setPaymentError(err.message || 'Payment could not be started. Try the demo order or check the server.')
@@ -188,6 +189,12 @@ export default function Checkout() {
   return (
     <div className="checkout">
       <h2 className="checkout__title">Checkout</h2>
+      {canceled && (
+        <div className="checkout__canceled-notice" role="status">
+          <p><strong>Payment was canceled.</strong> Your items are still in your cart—you can proceed to payment again when you&apos;re ready or <Link to="/shop">continue shopping</Link>.</p>
+          <button type="button" className="checkout__dismiss-canceled" onClick={() => setSearchParams({})} aria-label="Dismiss">×</button>
+        </div>
+      )}
       <form className="checkout__form" onSubmit={(e) => e.preventDefault()}>
         <section className="checkout__section">
           <h3>Contact & shipping</h3>
@@ -371,6 +378,9 @@ export default function Checkout() {
           </p>
           <p className="checkout__tax-note">All prices include tax.</p>
 
+          <p className="checkout__payment-note">
+            Your order is only confirmed after payment is complete. You&apos;ll be redirected to our secure payment page.
+          </p>
           {paymentError && (
             <p className="checkout__error" role="alert">
               {paymentError}

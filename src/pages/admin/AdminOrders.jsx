@@ -10,7 +10,11 @@ const STATUS_OPTIONS = [
   { value: 'processing', label: 'Processing' },
   { value: 'shipped', label: 'Shipped' },
   { value: 'delivered', label: 'Delivered' },
+  { value: 'refunded', label: 'Refunded' },
+  { value: 'canceled', label: 'Canceled' },
 ]
+
+const FILTER_OPTIONS = [{ value: '', label: 'All orders' }, ...STATUS_OPTIONS]
 
 export default function AdminOrders() {
   const { user, loading: authLoading } = useAuth()
@@ -19,6 +23,7 @@ export default function AdminOrders() {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [updatingId, setUpdatingId] = useState(null)
+  const [statusFilter, setStatusFilter] = useState('')
 
   useEffect(() => {
     if (!user) return
@@ -65,7 +70,22 @@ export default function AdminOrders() {
       ) : orders.length === 0 ? (
         <p className="admin__empty">No orders yet.</p>
       ) : (
-        <div className="admin__table-wrap">
+        <>
+          <div className="admin__filter">
+            <label htmlFor="admin-status-filter" className="admin__filter-label">Filter</label>
+            <select
+              id="admin-status-filter"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="admin__select admin__select--filter"
+              aria-label="Filter orders by status"
+            >
+              {FILTER_OPTIONS.map((opt) => (
+                <option key={opt.value || 'all'} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+          <div className="admin__table-wrap">
           <table className="admin__table">
             <thead>
               <tr>
@@ -78,7 +98,9 @@ export default function AdminOrders() {
               </tr>
             </thead>
             <tbody>
-              {orders.map((o) => (
+              {orders
+                .filter((o) => !statusFilter || (o.status || 'pending') === statusFilter)
+                .map((o) => (
                 <tr key={o.id}>
                   <td>
                     <code className="admin__order-id">{o.id}</code>
@@ -117,7 +139,8 @@ export default function AdminOrders() {
               ))}
             </tbody>
           </table>
-        </div>
+          </div>
+        </>
       )}
     </div>
   )

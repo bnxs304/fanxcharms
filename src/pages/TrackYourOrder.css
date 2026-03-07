@@ -79,6 +79,24 @@
   margin-bottom: 1.5rem;
 }
 
+.track-order__pending-notice {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  color: #92400e;
+}
+
+.track-order__pending-notice p {
+  margin: 0 0 0.5rem 0;
+}
+
+.track-order__pending-notice p:last-child {
+  margin-bottom: 0;
+}
+
 .track-order__result h2 {
   font-size: 1.25rem;
   font-weight: 600;

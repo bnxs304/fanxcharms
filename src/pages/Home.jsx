@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { useProducts } from '../hooks/useProducts'
+import { useCart } from '../context/CartContext'
 import { confirmOrderPaid } from '../lib/ordersService'
 import './Home.css'
 
@@ -10,18 +11,20 @@ export default function Home() {
   const orderId = searchParams.get('orderId') || ''
   const sessionId = searchParams.get('session_id') || ''
   const { products, loading, error } = useProducts()
+  const { clearCart } = useCart()
   const whatsNewProducts = products.slice(0, 4)
 
   useEffect(() => {
     if (!orderSuccess || !orderId || !sessionId) return
     confirmOrderPaid(orderId, sessionId).catch(() => { /* ignore – webhook may have already updated */ })
-  }, [orderSuccess, orderId, sessionId])
+    clearCart()
+  }, [orderSuccess, orderId, sessionId, clearCart])
 
   return (
     <div className="home">
       {orderSuccess && (
-        <div className="home__banner">
-          Thanks for your order! We'll get it ready for you.
+        <div className="home__banner home__banner--success">
+          <strong>Payment received.</strong> Your order is confirmed. We'll get it ready for you.
           {orderId && (
             <span className="home__banner-order">
               {' '}Order ref: <strong>{orderId}</strong>. A confirmation email has been sent to you. You can <Link to="/track-your-order">track your order</Link> with this reference and your email.

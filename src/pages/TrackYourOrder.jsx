@@ -9,6 +9,8 @@ const STATUS_LABELS = {
   processing: 'Processing',
   shipped: 'Shipped',
   delivered: 'Delivered',
+  refunded: 'Refunded',
+  canceled: 'Canceled',
 }
 
 export default function TrackYourOrder() {
@@ -84,6 +86,12 @@ export default function TrackYourOrder() {
           <p className="track-order__status">
             Status: <strong>{STATUS_LABELS[order.status] ?? order.status}</strong>
           </p>
+          {(order.status === 'pending' || !order.status) && (
+            <div className="track-order__pending-notice" role="status">
+              <p><strong>This order has not been paid yet.</strong></p>
+              <p>If you didn&apos;t complete payment, this order will not be fulfilled. You can place a new order when you&apos;re ready. If you&apos;ve just paid, your status may update in a few moments.</p>
+            </div>
+          )}
           {(order.trackingNumber || order.carrier) && (
             <p className="track-order__tracking">
               {order.carrier && <strong>{order.carrier}</strong>}
