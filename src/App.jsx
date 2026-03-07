@@ -6,6 +6,9 @@ import ProductDetail from './pages/ProductDetail'
 import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
 import TrackYourOrder from './pages/TrackYourOrder'
+import ReturnsRefunds from './pages/ReturnsRefunds'
+import PrivacyPolicy from './pages/PrivacyPolicy'
+import Terms from './pages/Terms'
 import AdminLayout from './components/AdminLayout'
 import AdminLogin from './pages/admin/AdminLogin'
 import AdminProducts from './pages/admin/AdminProducts'
@@ -23,6 +26,9 @@ export default function App() {
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/track-your-order" element={<TrackYourOrder />} />
+        <Route path="/returns-refunds" element={<ReturnsRefunds />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<Terms />} />
       </Route>
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<Navigate to="/admin/orders" replace />} />

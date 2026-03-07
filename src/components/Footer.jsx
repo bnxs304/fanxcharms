@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import './Footer.css'
 
 export default function Footer() {
@@ -6,7 +7,11 @@ export default function Footer() {
       <div className="footer__bottom">
         <span className="footer__copy">All rights reserved</span>
         <span className="footer__legal">
-          <a href="/">Privacy Policy</a> / <a href="/">General conditions</a> / <a href="/">Return Policy</a>
+          <Link to="/privacy">Privacy Policy</Link>
+          {' / '}
+          <Link to="/terms">General conditions</Link>
+          {' / '}
+          <Link to="/returns-refunds">Returns & Refunds</Link>
         </span>
       </div>
     </footer>
