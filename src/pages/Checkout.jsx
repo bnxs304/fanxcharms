@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useCart } from '../context/CartContext'
 import { createOrder } from '../lib/ordersService'
-import { createSumUpCheckout } from '../lib/sumup'
+import { createStripeCheckout } from '../lib/stripeCheckout'
 import { getShippingRates } from '../lib/shippingRatesService'
 import { validateAddresses } from '../lib/addressValidationService'
 import './Checkout.css'
@@ -43,8 +43,8 @@ export default function Checkout() {
   const [selectedRate, setSelectedRate] = useState(null)
   const shippingCost = selectedRate != null ? (Number(selectedRate.amount) ?? 0) : 0
   const orderTotal = (Number(cartTotal) || 0) + shippingCost
-  const [sumUpLoading, setSumUpLoading] = useState(false)
-  const [sumUpError, setSumUpError] = useState(null)
+  const [paymentLoading, setPaymentLoading] = useState(false)
+  const [paymentError, setPaymentError] = useState(null)
   const [fieldErrors, setFieldErrors] = useState([])
   const [addressValidation, setAddressValidation] = useState(null)
   const [validatingAddress, setValidatingAddress] = useState(false)
@@ -127,9 +127,9 @@ export default function Checkout() {
     navigate('/?order=success')
   }
 
-  const handlePayWithSumUp = async (e) => {
+  const handlePayWithStripe = async (e) => {
     e.preventDefault()
-    setSumUpError(null)
+    setPaymentError(null)
     setFieldErrors([])
     const errors = validateCheckout({ email, confirmEmail, address, postcode, countryCode })
     if (!addressIsValidated && !validationSkippedDueToPlan) errors.push('Please validate your address before continuing.')
@@ -140,7 +140,7 @@ export default function Checkout() {
     }
     const emailVal = email.trim()
     const addressVal = [address.trim(), postcode.trim()].filter(Boolean).join(', ')
-    setSumUpLoading(true)
+    setPaymentLoading(true)
     try {
       const { orderId } = await createOrder({
         email: emailVal,
@@ -159,18 +159,19 @@ export default function Checkout() {
         total: orderTotal,
         currency: 'GBP',
       })
-      const { hosted_checkout_url } = await createSumUpCheckout({
+      const { url } = await createStripeCheckout({
         amount: orderTotal,
-        currency: 'GBP',
-        checkout_reference: orderId,
+        currency: 'gbp',
+        orderId,
         description: `Fan X Charms – ${cart.length} item(s)`,
-        redirect_url: `${window.location.origin}/?order=success&orderId=${encodeURIComponent(orderId)}`,
+        success_url: `${window.location.origin}/?order=success&orderId=${encodeURIComponent(orderId)}`,
+        cancel_url: `${window.location.origin}/checkout`,
       })
       clearCart()
-      window.location.href = hosted_checkout_url
+      window.location.href = url
     } catch (err) {
-      setSumUpError(err.message || 'Payment could not be started. Try the demo order or check the server.')
-      setSumUpLoading(false)
+      setPaymentError(err.message || 'Payment could not be started. Try the demo order or check the server.')
+      setPaymentLoading(false)
     }
   }
 
@@ -368,19 +369,19 @@ export default function Checkout() {
             Total <strong>£{(Number(orderTotal) || 0).toFixed(2)}</strong>
           </p>
 
-          {sumUpError && (
+          {paymentError && (
             <p className="checkout__error" role="alert">
-              {sumUpError}
+              {paymentError}
             </p>
           )}
 
           <button
             type="button"
-            className="checkout__submit checkout__submit--sumup"
-            onClick={handlePayWithSumUp}
-            disabled={sumUpLoading || (!addressIsValidated && !validationSkippedDueToPlan) || !selectedRate}
+            className="checkout__submit checkout__submit--stripe"
+            onClick={handlePayWithStripe}
+            disabled={paymentLoading || (!addressIsValidated && !validationSkippedDueToPlan) || !selectedRate}
           >
-            {sumUpLoading ? 'Redirecting to payment…' : 'Pay with SumUp'}
+            {paymentLoading ? 'Redirecting to checkout…' : 'Proceed to payment'}
           </button>
           <button
             type="button"

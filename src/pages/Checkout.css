@@ -271,16 +271,19 @@
   background: var(--primary-dark);
 }
 
+.checkout__submit--stripe,
 .checkout__submit--sumup {
   background: var(--primary);
   color: white;
   margin-bottom: 0.5rem;
 }
 
+.checkout__submit--stripe:hover:not(:disabled),
 .checkout__submit--sumup:hover:not(:disabled) {
   background: var(--primary-dark);
 }
 
+.checkout__submit--stripe:disabled,
 .checkout__submit--sumup:disabled {
   opacity: 0.8;
   cursor: wait;

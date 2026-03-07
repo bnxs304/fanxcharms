@@ -1,16 +1,16 @@
 /**
- * Backend: SumUp checkout + order management (Firestore).
+ * Backend: Stripe Checkout + order management (Firestore).
  * Production: set NODE_ENV=production, CORS_ORIGIN to your frontend URL(s), all secrets via env.
  */
 import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
 import admin from 'firebase-admin'
+import Stripe from 'stripe'
 
 const isProd = process.env.NODE_ENV === 'production'
 const app = express()
 const PORT = process.env.PORT || 3001
-const SUMUP_API = 'https://api.sumup.com/v0.1/checkouts'
 const ORDERS_COLLECTION = 'orders'
 
 function safeMessage(err) {
@@ -87,7 +87,7 @@ app.get('/', (req, res) => {
 app.get('/api/health', (req, res) => {
   res.json({
     ok: true,
-    sumup: !!(process.env.SUMUP_API_KEY || process.env.SUMUP_ACCESS_TOKEN) && !!process.env.SUMUP_MERCHANT_CODE,
+    stripe: !!process.env.STRIPE_SECRET_KEY,
     orders: !!db,
   })
 })
@@ -162,69 +162,63 @@ app.post('/api/addresses/validate', (req, res) => {
   res.json({ results })
 })
 
-app.post('/api/create-sumup-checkout', async (req, res) => {
-  const token = process.env.SUMUP_API_KEY || process.env.SUMUP_ACCESS_TOKEN
-  const merchantCode = process.env.SUMUP_MERCHANT_CODE
-
-  if (!token || !merchantCode) {
+app.post('/api/create-stripe-checkout', async (req, res) => {
+  const secretKey = process.env.STRIPE_SECRET_KEY
+  if (!secretKey) {
     return res.status(503).json({
-      error: 'SumUp not configured',
-      message: 'Set SUMUP_API_KEY and SUMUP_MERCHANT_CODE on the server. Get your API key at https://me.sumup.com/settings/api-keys',
+      error: 'Stripe not configured',
+      message: 'Set STRIPE_SECRET_KEY on the server. Get your key at https://dashboard.stripe.com/apikeys',
     })
   }
 
-  const { amount, currency = 'GBP', checkout_reference, description, redirect_url } = req.body
+  const { amount, currency = 'gbp', orderId, description, success_url, cancel_url } = req.body
 
-  if (amount == null || !checkout_reference) {
+  if (amount == null || !orderId) {
     return res.status(400).json({
       error: 'Missing required fields',
-      message: 'Body must include amount and checkout_reference.',
+      message: 'Body must include amount and orderId.',
     })
   }
 
-  const payload = {
-    merchant_code: merchantCode,
-    amount: Number(amount),
-    currency: String(currency).toUpperCase(),
-    checkout_reference: String(checkout_reference),
-    hosted_checkout: { enabled: true },
-  }
-  if (description) payload.description = description
-  if (redirect_url) payload.redirect_url = redirect_url
+  const stripe = new Stripe(secretKey)
+  const amountCents = Math.round(Number(amount) * 100)
 
   try {
-    const response = await fetch(SUMUP_API, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(payload),
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      line_items: [
+        {
+          price_data: {
+            currency: (currency || 'gbp').toLowerCase(),
+            product_data: {
+              name: 'Fan X Charms order',
+              description: description || `Order ${orderId}`,
+              images: [],
+            },
+            unit_amount: amountCents,
+          },
+          quantity: 1,
+        },
+      ],
+      success_url: success_url || `${process.env.FRONTEND_URL || 'http://localhost:5173'}/?order=success&orderId=${encodeURIComponent(orderId)}`,
+      cancel_url: cancel_url || `${process.env.FRONTEND_URL || 'http://localhost:5173'}/checkout`,
+      client_reference_id: String(orderId),
+      metadata: { orderId: String(orderId) },
     })
 
-    const data = await response.json().catch(() => ({}))
-
-    if (!response.ok) {
-      return res.status(response.status).json({
-        error: 'SumUp checkout failed',
-        message: data.message || data.error_description || response.statusText,
-      })
-    }
-
-    const url = data.hosted_checkout_url
-    if (!url) {
+    if (!session.url) {
       return res.status(502).json({
         error: 'No payment URL',
-        message: 'SumUp did not return hosted_checkout_url.',
+        message: 'Stripe did not return a checkout URL.',
       })
     }
 
-    res.json({ hosted_checkout_url: url, checkout_id: data.id })
+    res.json({ url: session.url, sessionId: session.id })
   } catch (err) {
-    console.error('SumUp create checkout error:', err.message)
+    console.error('Stripe create checkout error:', err.message)
     res.status(500).json({
-      error: 'Server error',
-      message: safeMessage(err),
+      error: 'Stripe checkout failed',
+      message: err.type === 'StripeError' ? err.message : safeMessage(err),
     })
   }
 })
@@ -325,11 +319,10 @@ app.get('/api/orders/:orderId', async (req, res) => {
 app.listen(PORT, () => {
   if (!isProd) {
     console.log(`Server running at http://localhost:${PORT}`)
-    console.log('Endpoints: GET /api/health, POST /api/shipping-rates, POST /api/create-sumup-checkout, POST /api/orders, GET /api/orders/:orderId')
+    console.log('Endpoints: GET /api/health, POST /api/shipping-rates, POST /api/create-stripe-checkout, POST /api/orders, GET /api/orders/:orderId')
   }
-  const key = process.env.SUMUP_API_KEY || process.env.SUMUP_ACCESS_TOKEN
-  if (!key || !process.env.SUMUP_MERCHANT_CODE) {
-    console.warn('SumUp not configured: set SUMUP_API_KEY and SUMUP_MERCHANT_CODE')
+  if (!process.env.STRIPE_SECRET_KEY) {
+    console.warn('Stripe not configured: set STRIPE_SECRET_KEY')
   }
   if (!db) {
     console.warn('Orders not configured: set Firebase Admin credentials (see .env.example)')
