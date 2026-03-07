@@ -78,6 +78,48 @@ const corsOrigins = typeof corsOrigin === 'string' && corsOrigin.includes(',')
 const corsOptions = { origin: corsOrigins }
 
 app.use(cors(corsOptions))
+
+// Stripe webhook needs raw body for signature verification – must be before express.json()
+app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
+  const secretKey = process.env.STRIPE_SECRET_KEY
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
+  if (!secretKey || !webhookSecret) {
+    console.warn('Stripe webhook skipped: STRIPE_SECRET_KEY or STRIPE_WEBHOOK_SECRET not set')
+    return res.status(503).send('Webhook not configured')
+  }
+  const sig = req.headers['stripe-signature']
+  if (!sig) return res.status(400).send('Missing Stripe-Signature')
+  let event
+  try {
+    const stripe = new Stripe(secretKey)
+    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret)
+  } catch (err) {
+    console.error('Stripe webhook signature verification failed:', err.message)
+    return res.status(400).send(`Webhook Error: ${err.message}`)
+  }
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object
+    const orderId = session.metadata?.orderId || session.client_reference_id
+    if (orderId && db) {
+      try {
+        const ref = db.collection(ORDERS_COLLECTION).doc(orderId)
+        const snap = await ref.get()
+        if (snap.exists) {
+          const order = snap.data()
+          await ref.update({
+            status: 'paid',
+            updatedAt: admin.firestore.Timestamp.now(),
+          })
+          sendOrderConfirmationEmail(orderId, order).catch((e) => console.warn('Confirmation email failed:', e.message))
+        }
+      } catch (e) {
+        console.error('Webhook order update/email error:', e.message)
+      }
+    }
+  }
+  res.json({ received: true })
+})
+
 app.use(express.json({ limit: '256kb' }))
 
 app.get('/', (req, res) => {
@@ -262,7 +304,6 @@ app.post('/api/orders', async (req, res) => {
   try {
     const ref = await db.collection(ORDERS_COLLECTION).add(order)
     const orderId = ref.id
-    sendOrderConfirmationEmail(orderId, order).catch((e) => console.warn('Confirmation email failed:', e.message))
     res.status(201).json({ orderId })
   } catch (err) {
     console.error('Create order error:', err.message)
