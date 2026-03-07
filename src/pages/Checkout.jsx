@@ -10,20 +10,22 @@ import './Checkout.css'
 
 const COUNTRY_OPTIONS = [
   { value: 'GB', label: 'United Kingdom' },
-  { value: 'EU', label: 'European Union' },
-  { value: 'OTHER', label: 'International (rest of world)' },
+  { value: 'INTL', label: 'International' },
 ]
 
 const UK_POSTCODE_REGEX = /^[A-Z]{1,2}[0-9][0-9A-Z]?\s*[0-9][A-Z]{2}$/i
 
-function validateCheckout({ email, confirmEmail, address, postcode, countryCode }) {
+function validateCheckout({ email, confirmEmail, name, addressLine1, city, postcode, countryCode }) {
   const errors = []
   if (!email.trim()) errors.push('Email is required.')
   else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push('Please enter a valid email address.')
   if (email !== confirmEmail) errors.push('Email and confirmation do not match.')
-  if (!address.trim()) errors.push('Address is required.')
-  else if (address.trim().length < 10) errors.push('Please enter a full shipping address (at least 10 characters).')
-  if (countryCode === 'GB' && postcode.trim() && !UK_POSTCODE_REGEX.test(postcode.replace(/\s/g, ''))) {
+  if (!name.trim()) errors.push('Name is required.')
+  if (!addressLine1.trim()) errors.push('Address line 1 is required.')
+  else if (addressLine1.trim().length < 5) errors.push('Please enter a full address (at least 5 characters).')
+  if (!city.trim()) errors.push('City / town is required.')
+  if (!postcode.trim()) errors.push(countryCode === 'GB' ? 'Postcode is required.' : 'Postcode / ZIP code is required.')
+  else if (countryCode === 'GB' && !UK_POSTCODE_REGEX.test(postcode.replace(/\s/g, ''))) {
     errors.push('Please enter a valid UK postcode (e.g. SW1A 1AA).')
   }
   return errors
@@ -36,10 +38,12 @@ export default function Checkout() {
   const canceled = searchParams.get('canceled') === '1'
   const [email, setEmail] = useState('')
   const [confirmEmail, setConfirmEmail] = useState('')
-  const [address, setAddress] = useState('')
+  const [name, setName] = useState('')
+  const [addressLine1, setAddressLine1] = useState('')
+  const [addressLine2, setAddressLine2] = useState('')
+  const [city, setCity] = useState('')
   const [postcode, setPostcode] = useState('')
   const [countryCode, setCountryCode] = useState('GB')
-  const [name, setName] = useState('')
   const [rates, setRates] = useState([])
   const [ratesLoading, setRatesLoading] = useState(false)
   const [ratesError, setRatesError] = useState(null)
@@ -55,13 +59,13 @@ export default function Checkout() {
 
   const addressIsValidated = addressValidation && (addressValidation.status === 'verified' || addressValidation.status === 'warning')
   const validationUnavailableDueToPlan = addressValidation?.status === 'error' && addressValidation?.code === 'VALIDATION_PLAN_REQUIRED'
-  const canShowShippingRates = addressIsValidated || (validationSkippedDueToPlan && address.trim() && postcode.trim())
-  const countryCodeForApi = countryCode === 'EU' ? 'FR' : countryCode === 'OTHER' ? 'US' : countryCode
+  const canShowShippingRates = addressIsValidated || (validationSkippedDueToPlan && addressLine1.trim() && city.trim() && postcode.trim())
+  const countryCodeForApi = countryCode === 'INTL' ? 'US' : countryCode
 
   useEffect(() => {
     setAddressValidation(null)
     setValidationSkippedDueToPlan(false)
-  }, [address, postcode, countryCode])
+  }, [addressLine1, addressLine2, city, postcode, countryCode])
 
   useEffect(() => {
     if (!canShowShippingRates) {
@@ -72,7 +76,7 @@ export default function Checkout() {
       return
     }
     const matched = addressValidation?.matched_address || addressValidation?.original_address
-    const code = countryCode === 'EU' ? 'FR' : countryCode === 'OTHER' ? 'US' : countryCode
+    const code = countryCode === 'INTL' ? 'US' : countryCode
     setRatesLoading(true)
     setRatesError(null)
     getShippingRates({
@@ -94,12 +98,14 @@ export default function Checkout() {
   }, [countryCode, postcode, canShowShippingRates, addressValidation?.matched_address, addressValidation?.original_address])
 
   const handleValidateAddress = async () => {
-    if (!address.trim() || !postcode.trim()) return
+    if (!addressLine1.trim() || !postcode.trim()) return
     setValidatingAddress(true)
     setAddressValidation(null)
     try {
       const { results } = await validateAddresses([{
-        address_line1: address.trim(),
+        address_line1: addressLine1.trim(),
+        address_line2: addressLine2.trim() || undefined,
+        city_locality: city.trim() || undefined,
         postal_code: postcode.trim(),
         country_code: countryCodeForApi,
       }])
@@ -115,7 +121,9 @@ export default function Checkout() {
   const applyMatchedAddress = () => {
     const m = addressValidation?.matched_address
     if (!m) return
-    setAddress([m.address_line1, m.address_line2].filter(Boolean).join(', '))
+    setAddressLine1(m.address_line1 || addressLine1)
+    setAddressLine2(m.address_line2 || addressLine2)
+    setCity(m.city_locality || m.city || city)
     setPostcode(m.postal_code || postcode)
   }
 
@@ -134,7 +142,7 @@ export default function Checkout() {
     e.preventDefault()
     setPaymentError(null)
     setFieldErrors([])
-    const errors = validateCheckout({ email, confirmEmail, address, postcode, countryCode })
+    const errors = validateCheckout({ email, confirmEmail, name, addressLine1, city, postcode, countryCode })
     if (!addressIsValidated && !validationSkippedDueToPlan) errors.push('Please validate your address before continuing.')
     if (!selectedRate) errors.push('Please select a shipping method.')
     if (errors.length > 0) {
@@ -142,13 +150,14 @@ export default function Checkout() {
       return
     }
     const emailVal = email.trim()
-    const addressVal = [address.trim(), postcode.trim()].filter(Boolean).join(', ')
+    const countryLabel = COUNTRY_OPTIONS.find((o) => o.value === countryCode)?.label || countryCode
+    const addressVal = [addressLine1.trim(), addressLine2.trim(), city.trim(), postcode.trim(), countryLabel].filter(Boolean).join(', ')
     setPaymentLoading(true)
     try {
       const { orderId } = await createOrder({
         email: emailVal,
         address: addressVal,
-        name: name.trim() || undefined,
+        name: name.trim(),
         shippingMethod: selectedRate ? `${selectedRate.carrier} – ${selectedRate.serviceName}` : 'Standard',
         shippingCost,
         items: cart.map((i) => ({
@@ -226,31 +235,55 @@ export default function Checkout() {
             />
           </div>
           <div className="checkout__field">
-            <label htmlFor="name">Name (optional)</label>
+            <label htmlFor="name">Name</label>
             <input
               id="name"
               type="text"
-              placeholder="Your name"
+              placeholder="Your full name"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              required
               autoComplete="name"
             />
           </div>
           <div className="checkout__field">
-            <label htmlFor="address">Shipping address</label>
+            <label htmlFor="addressLine1">Address line 1</label>
             <input
-              id="address"
+              id="addressLine1"
               type="text"
-              placeholder="Street, city"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
+              placeholder="Street address"
+              value={addressLine1}
+              onChange={(e) => setAddressLine1(e.target.value)}
               required
-              autoComplete="street-address"
-              minLength={10}
+              autoComplete="address-line1"
+              minLength={5}
             />
           </div>
           <div className="checkout__field">
-            <label htmlFor="country">Country / region</label>
+            <label htmlFor="addressLine2">Address line 2 <span className="checkout__optional">(optional)</span></label>
+            <input
+              id="addressLine2"
+              type="text"
+              placeholder="Flat, building, etc."
+              value={addressLine2}
+              onChange={(e) => setAddressLine2(e.target.value)}
+              autoComplete="address-line2"
+            />
+          </div>
+          <div className="checkout__field">
+            <label htmlFor="city">City / town</label>
+            <input
+              id="city"
+              type="text"
+              placeholder="City or town"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              required
+              autoComplete="address-level2"
+            />
+          </div>
+          <div className="checkout__field">
+            <label htmlFor="country">Country</label>
             <select
               id="country"
               value={countryCode}
@@ -264,13 +297,14 @@ export default function Checkout() {
             </select>
           </div>
           <div className="checkout__field">
-            <label htmlFor="postcode">Postcode {countryCode === 'GB' ? '(optional for UK)' : '(optional)'}</label>
+            <label htmlFor="postcode">{countryCode === 'GB' ? 'Postcode' : 'Postcode / ZIP code'}</label>
             <input
               id="postcode"
               type="text"
               placeholder={countryCode === 'GB' ? 'e.g. SW1A 1AA' : 'e.g. 12345'}
               value={postcode}
               onChange={(e) => setPostcode(e.target.value)}
+              required
               autoComplete="postal-code"
             />
           </div>
@@ -280,7 +314,7 @@ export default function Checkout() {
               type="button"
               className="checkout__validate-btn"
               onClick={handleValidateAddress}
-              disabled={validatingAddress || !address.trim() || !postcode.trim()}
+              disabled={validatingAddress || !addressLine1.trim() || !city.trim() || !postcode.trim()}
             >
               {validatingAddress ? 'Validating…' : 'Validate address'}
             </button>

@@ -92,6 +92,12 @@
   color: var(--text);
 }
 
+.checkout__optional {
+  font-weight: 400;
+  color: var(--text-muted);
+  font-size: 0.9em;
+}
+
 .checkout__field input {
   width: 100%;
   padding: 0.75rem 1rem;

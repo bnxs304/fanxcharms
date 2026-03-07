@@ -160,19 +160,13 @@ app.get('/api/health', (req, res) => {
   })
 })
 
-// Fixed zone-based shipping (no external API). Set SHIPPING_UK, SHIPPING_EU, SHIPPING_INTERNATIONAL in env (pounds).
-const EU_COUNTRY_CODES = new Set(['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE'])
-
+// Zone-based shipping: UK or International only. Set SHIPPING_UK and SHIPPING_INTERNATIONAL in env (pounds).
 function getZoneRates(countryCode) {
   const country = (countryCode || 'GB').toUpperCase().trim()
   const uk = Number(process.env.SHIPPING_UK) ?? 0
-  const eu = Number(process.env.SHIPPING_EU) || 9.99
   const international = Number(process.env.SHIPPING_INTERNATIONAL) || 19.99
   if (country === 'GB') {
     return [{ id: 'zone-uk', carrier: 'Standard', serviceName: 'UK delivery', amount: uk, currency: 'GBP', estimatedDays: '2-4' }]
-  }
-  if (EU_COUNTRY_CODES.has(country)) {
-    return [{ id: 'zone-eu', carrier: 'Standard', serviceName: 'EU delivery', amount: eu, currency: 'GBP', estimatedDays: '5-7' }]
   }
   return [{ id: 'zone-intl', carrier: 'Standard', serviceName: 'International delivery', amount: international, currency: 'GBP', estimatedDays: '7-14' }]
 }
