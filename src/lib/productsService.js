@@ -139,10 +139,12 @@ export async function getProducts() {
   return staticProducts.map(withImages)
 }
 
-/** In-stock check (works for both Firestore and static shape). */
+/** In-stock check (works for both Firestore and static shape). Stock 0 = out of stock; null/undefined = no limit. */
 export function isInStock(product) {
   if (!product) return false
-  return product.stock == null || product.stock > 0
+  if (product.stock == null || product.stock === '') return true
+  const n = Number(product.stock)
+  return !Number.isNaN(n) && n > 0
 }
 
 /** Seed Firestore with static products (admin only). Creates new docs; does not overwrite. */

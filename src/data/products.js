@@ -70,7 +70,10 @@ export function getProductById(id) {
   return products.find((p) => p.id === id) ?? null
 }
 
-/** True if product has stock (stock undefined or > 0). */
+/** True if product has stock. Stock 0 = out of stock; null/undefined = no limit. */
 export function isInStock(product) {
-  return product && (product.stock == null || product.stock > 0)
+  if (!product) return false
+  if (product.stock == null || product.stock === '') return true
+  const n = Number(product.stock)
+  return !Number.isNaN(n) && n > 0
 }

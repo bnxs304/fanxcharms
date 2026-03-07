@@ -6,7 +6,6 @@ import {
   createProduct,
   updateProduct,
 } from '../../lib/productsService'
-import { uploadProductImage } from '../../lib/uploadImage'
 import { SHOP_CATEGORIES } from '../../data/categories'
 import './Admin.css'
 
@@ -46,7 +45,6 @@ export default function AdminProductForm() {
   const [form, setForm] = useState(defaultProduct)
   const [loading, setLoading] = useState(!isNew)
   const [saving, setSaving] = useState(false)
-  const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -80,22 +78,6 @@ export default function AdminProductForm() {
   const handleChange = (e) => {
     const { name, value } = e.target
     setForm((prev) => ({ ...prev, [name]: value }))
-  }
-
-  const handleImageUpload = async (e) => {
-    const file = e.target.files?.[0]
-    if (!file || !file.type.startsWith('image/')) return
-    setError('')
-    setUploading(true)
-    try {
-      const url = await uploadProductImage(file)
-      setForm((prev) => ({ ...prev, images: [...(prev.images || []), url] }))
-    } catch (err) {
-      setError(err.message || 'Image upload failed')
-    } finally {
-      setUploading(false)
-      e.target.value = ''
-    }
   }
 
   const removeImage = (index) => {
@@ -167,18 +149,7 @@ export default function AdminProductForm() {
         </div>
         <div className="admin__field">
           <label>Product images</label>
-          <p className="admin__hint">First image is the main one. Upload or add URLs to add more.</p>
-          <div className="admin__image-upload">
-            <input
-              id="image-file"
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              disabled={uploading}
-              className="admin__file-input"
-            />
-            {uploading && <span className="admin__upload-status">Uploading…</span>}
-          </div>
+          <p className="admin__hint">First image is the main one. Add image URLs below.</p>
           <AddImageUrlForm onAdd={addImageUrl} />
           {form.images && form.images.length > 0 && (
             <div className="admin__image-list">
@@ -212,8 +183,8 @@ export default function AdminProductForm() {
           <input id="stock" name="stock" type="number" min="0" value={form.stock} onChange={handleChange} />
         </div>
         <div className="admin__actions">
-          <button type="submit" className="admin__btn admin__btn--primary" disabled={saving || uploading}>
-            {saving ? 'Saving…' : uploading ? 'Uploading image…' : isNew ? 'Create product' : 'Save changes'}
+          <button type="submit" className="admin__btn admin__btn--primary" disabled={saving}>
+            {saving ? 'Saving…' : isNew ? 'Create product' : 'Save changes'}
           </button>
           <Link to="/admin/products" className="admin__btn">Cancel</Link>
         </div>

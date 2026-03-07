@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { getProductsFromFirestore, deleteProduct, seedStaticProducts } from '../../lib/productsService'
+import { getProductsFromFirestore, deleteProduct, seedStaticProducts, createProduct } from '../../lib/productsService'
 import './Admin.css'
 
 export default function AdminProducts() {
@@ -11,6 +11,7 @@ export default function AdminProducts() {
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [deletingId, setDeletingId] = useState(null)
+  const [duplicatingId, setDuplicatingId] = useState(null)
   const [seeding, setSeeding] = useState(false)
 
   useEffect(() => {
@@ -52,6 +53,28 @@ export default function AdminProducts() {
       alert(e.message || 'Delete failed')
     } finally {
       setDeletingId(null)
+    }
+  }
+
+  const handleDuplicate = async (p) => {
+    setDuplicatingId(p.id)
+    try {
+      const newId = await createProduct({
+        name: `${p.name} (copy)`,
+        price: p.price,
+        description: p.description ?? '',
+        images: Array.isArray(p.images) && p.images.length > 0 ? [...p.images] : (p.image ? [p.image] : []),
+        category: p.category ?? '',
+        sizes: Array.isArray(p.sizes) ? p.sizes : ['One Size'],
+        stock: null,
+      })
+      const data = await getProductsFromFirestore()
+      setProducts(data)
+      navigate(`/admin/products/${newId}/edit`)
+    } catch (e) {
+      alert(e.message || 'Duplicate failed')
+    } finally {
+      setDuplicatingId(null)
     }
   }
 
@@ -100,6 +123,16 @@ export default function AdminProducts() {
                   <td>{p.stock != null ? p.stock : '—'}</td>
                   <td>
                     <Link to={`/admin/products/${p.id}/edit`} className="admin__btn admin__btn--small">Edit</Link>
+                    {' '}
+                    <button
+                      type="button"
+                      className="admin__btn admin__btn--small"
+                      onClick={() => handleDuplicate(p)}
+                      disabled={duplicatingId === p.id}
+                      title="Duplicate this product"
+                    >
+                      {duplicatingId === p.id ? '…' : 'Duplicate'}
+                    </button>
                     {' '}
                     <button
                       type="button"
