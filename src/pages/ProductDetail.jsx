@@ -49,7 +49,7 @@ export default function ProductDetail() {
   if (error || !product) {
     return (
       <div className="product-detail product-detail--missing">
-        <p>{error || 'Product not found.'}</p>
+        <p>{error || 'This product isn’t available or the link may be wrong. Try browsing the shop.'}</p>
         <button type="button" onClick={() => navigate('/')}>Back to shop</button>
       </div>
     )

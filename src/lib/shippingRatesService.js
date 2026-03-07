@@ -21,7 +21,7 @@ export async function getShippingRates({ countryCode }) {
     if (Array.isArray(data.rates) && data.rates.length > 0) {
       return { rates: data.rates }
     }
-    const base = data.message || data.error || 'Could not get shipping rates'
+    const base = data.message || data.error || 'We couldn’t load shipping options'
     let details = ''
     if (Array.isArray(data.apiErrors) && data.apiErrors.length > 0) {
       details = data.apiErrors
@@ -29,7 +29,7 @@ export async function getShippingRates({ countryCode }) {
         .filter(Boolean)
         .join('; ')
     }
-    throw new Error(details ? `${base}. ${details}` : base)
+    throw new Error(details ? `${base}. ${details}` : `${base}. Please try again or contact us.`)
   }
   return { rates: data.rates || [] }
 }

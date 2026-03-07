@@ -15,7 +15,13 @@ export function useProducts() {
         if (!cancelled) setProducts(data)
       })
       .catch((e) => {
-        if (!cancelled) setError(e.message)
+        if (!cancelled) {
+          const msg = e?.message || ''
+          const friendly = /failed to fetch|network error|loadfailed/i.test(msg)
+            ? 'We couldn’t load the shop right now. Please try again.'
+            : (msg || 'Something went wrong. Please try again.')
+          setError(friendly)
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false)

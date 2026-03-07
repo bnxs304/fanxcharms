@@ -1,4 +1,4 @@
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useCart } from '../context/CartContext'
 import { createOrder } from '../lib/ordersService'
@@ -55,24 +55,23 @@ const UK_POSTCODE_REGEX = /^[A-Z]{1,2}[0-9][0-9A-Z]?\s*[0-9][A-Z]{2}$/i
 
 function validateCheckout({ email, confirmEmail, name, addressLine1, city, postcode, countryCode, internationalCountry }) {
   const errors = []
-  if (!email.trim()) errors.push('Email is required.')
-  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push('Please enter a valid email address.')
-  if (email !== confirmEmail) errors.push('Email and confirmation do not match.')
-  if (!name.trim()) errors.push('Name is required.')
-  if (!addressLine1.trim()) errors.push('Address line 1 is required.')
-  else if (addressLine1.trim().length < 5) errors.push('Please enter a full address (at least 5 characters).')
-  if (!city.trim()) errors.push('City / town is required.')
-  if (countryCode === 'INTL' && !internationalCountry) errors.push('Please select your country.')
-  if (!postcode.trim()) errors.push(countryCode === 'GB' ? 'Postcode is required.' : 'Postcode / ZIP code is required.')
+  if (!email.trim()) errors.push('Please enter your email address.')
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push('Please double-check your email address—it doesn’t look right.')
+  if (email !== confirmEmail) errors.push('Your email and confirmation don’t match. Please check both and try again.')
+  if (!name.trim()) errors.push('Please enter your name so we know who to send the order to.')
+  if (!addressLine1.trim()) errors.push('Please enter your street address.')
+  else if (addressLine1.trim().length < 5) errors.push('Please enter a full street address (at least 5 characters).')
+  if (!city.trim()) errors.push('Please enter your city or town.')
+  if (countryCode === 'INTL' && !internationalCountry) errors.push('Please choose your country from the list.')
+  if (!postcode.trim()) errors.push(countryCode === 'GB' ? 'Please enter your postcode.' : 'Please enter your postcode or ZIP code.')
   else if (countryCode === 'GB' && !UK_POSTCODE_REGEX.test(postcode.replace(/\s/g, ''))) {
-    errors.push('Please enter a valid UK postcode (e.g. SW1A 1AA).')
+    errors.push('That doesn’t look like a valid UK postcode (e.g. SW1A 1AA). Please check and try again.')
   }
   return errors
 }
 
 export default function Checkout() {
   const { cart, cartTotal, clearCart } = useCart()
-  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const canceled = searchParams.get('canceled') === '1'
   const [email, setEmail] = useState('')
@@ -167,24 +166,13 @@ export default function Checkout() {
     setPostcode(m.postal_code || postcode)
   }
 
-  const handlePlaceOrderDemo = (e) => {
-    e.preventDefault()
-    setFieldErrors([])
-    if (!addressIsValidated && !validationSkippedDueToPlan) {
-      setFieldErrors(['Please validate your address before continuing.'])
-      return
-    }
-    clearCart()
-    navigate('/?order=success')
-  }
-
   const handlePayWithStripe = async (e) => {
     e.preventDefault()
     setPaymentError(null)
     setFieldErrors([])
     const errors = validateCheckout({ email, confirmEmail, name, addressLine1, city, postcode, countryCode, internationalCountry })
-    if (!addressIsValidated && !validationSkippedDueToPlan) errors.push('Please validate your address before continuing.')
-    if (!selectedRate) errors.push('Please select a shipping method.')
+    if (!addressIsValidated && !validationSkippedDueToPlan) errors.push('Please validate your address above so we can show shipping options.')
+    if (!selectedRate) errors.push('Please choose a shipping method.')
     if (errors.length > 0) {
       setFieldErrors(errors)
       return
@@ -221,7 +209,7 @@ export default function Checkout() {
       })
       window.location.href = url
     } catch (err) {
-      setPaymentError(err.message || 'Payment could not be started. Try the demo order or check the server.')
+      setPaymentError(err.message || 'We couldn’t start payment right now. Please try again in a moment.')
       setPaymentLoading(false)
     }
   }
@@ -370,7 +358,7 @@ export default function Checkout() {
             />
           </div>
           <div className="checkout__field">
-            <p className="checkout__validate-note">You must validate your address before placing an order.</p>
+            <p className="checkout__validate-note">Click “Validate address” below so we can confirm your details and show shipping options.</p>
             <button
               type="button"
               className="checkout__validate-btn"
@@ -382,10 +370,10 @@ export default function Checkout() {
             {addressValidation && (
               <div className={`checkout__validation checkout__validation--${addressValidation.status}`} role="status">
                 <p className="checkout__validation-status">
-                  {addressValidation.status === 'verified' && 'Address verified.'}
-                  {addressValidation.status === 'warning' && 'Address validated with possible formatting changes.'}
-                  {addressValidation.status === 'error' && 'Address could not be verified.'}
-                  {addressValidation.status === 'unverified' && 'Pre-validation failed (check country/postcode format).'}
+                  {addressValidation.status === 'verified' && 'Address verified—you’re good to go.'}
+                  {addressValidation.status === 'warning' && 'Address checked. We’ve suggested a small formatting change you can apply if you like.'}
+                  {addressValidation.status === 'error' && 'We couldn’t verify this address. Please check the details and try again.'}
+                  {addressValidation.status === 'unverified' && 'Please check your country and postcode or ZIP code and try again.'}
                 </p>
                 {addressValidation.matched_address && (
                   <button type="button" className="checkout__use-suggested" onClick={applyMatchedAddress}>
@@ -405,7 +393,7 @@ export default function Checkout() {
                     className="checkout__use-suggested checkout__continue-without-validation"
                     onClick={() => setValidationSkippedDueToPlan(true)}
                   >
-                    Continue to shipping options
+                    I’ll continue without address validation
                   </button>
                 )}
               </div>
@@ -414,13 +402,13 @@ export default function Checkout() {
           <div className="checkout__field">
             <label>Shipping method</label>
             {!canShowShippingRates && !ratesLoading && (
-              <p className="checkout__rates-note">Validate your address above to see shipping options.</p>
+              <p className="checkout__rates-note">Validate your address above and we’ll show you shipping options.</p>
             )}
             {ratesLoading && <p className="checkout__rates-loading">Loading rates…</p>}
             {ratesError && <p className="checkout__rates-error" role="alert">{ratesError}</p>}
             {!ratesLoading && canShowShippingRates && rates.length === 0 && !ratesError && (
               <p className="checkout__rates-note checkout__rates-empty" role="status">
-                No shipping options available for this address. Please contact us at {CONTACT_EMAIL} for alternatives.
+                We don’t have shipping options for this address yet. Get in touch at {CONTACT_EMAIL} and we’ll help you out.
               </p>
             )}
             {!ratesLoading && rates.length > 0 && (
@@ -489,14 +477,6 @@ export default function Checkout() {
             disabled={paymentLoading || (!addressIsValidated && !validationSkippedDueToPlan) || !selectedRate || (countryCode === 'INTL' && !internationalCountry)}
           >
             {paymentLoading ? 'Redirecting to checkout…' : 'Proceed to payment'}
-          </button>
-          <button
-            type="button"
-            className="checkout__submit checkout__submit--demo"
-            onClick={handlePlaceOrderDemo}
-            disabled={(!addressIsValidated && !validationSkippedDueToPlan) || (countryCode === 'INTL' && !internationalCountry)}
-          >
-            Place order (demo, no payment)
           </button>
         </section>
       </form>

@@ -27,7 +27,7 @@ export default function TrackYourOrder() {
     const oid = orderId.trim()
     const em = email.trim()
     if (!oid || !em) {
-      setError('Please enter your order reference and email.')
+      setError('Please enter both your order reference and the email you used when ordering.')
       return
     }
     setLoading(true)
@@ -35,7 +35,7 @@ export default function TrackYourOrder() {
       const data = await getOrderForCustomer(oid, em)
       setOrder(data)
     } catch (err) {
-      setError(err.status === 404 ? 'Order not found. Check your order reference and email.' : (err.message || 'Something went wrong.'))
+      setError(err.status === 404 ? 'We couldn’t find an order with those details. Please check your order reference and email and try again.' : (err.message || 'Something went wrong. Please try again in a moment.'))
     } finally {
       setLoading(false)
     }

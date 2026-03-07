@@ -49,11 +49,11 @@ export async function createOrder({ email, address, name, shippingMethod, shippi
   })
   const data = await res.json().catch(() => ({}))
   if (!res.ok) {
-    const err = new Error(data.message || data.error || 'Failed to create order')
+    const err = new Error(data.message || data.error || 'We couldn’t create your order right now. Please try again.')
     err.status = res.status
     throw err
   }
-  if (!data.orderId) throw new Error('No order ID returned')
+  if (!data.orderId) throw new Error('We couldn’t create your order. Please try again.')
   return { orderId: data.orderId }
 }
 
@@ -68,7 +68,7 @@ export async function confirmOrderPaid(orderId, sessionId) {
     body: JSON.stringify({ session_id: sessionId }),
   })
   const data = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(data.message || data.error || 'Could not confirm payment')
+  if (!res.ok) throw new Error(data.message || data.error || 'We couldn’t confirm your payment. Don’t worry—if you’ve paid, we’ll update your order shortly.')
   return data
 }
 
@@ -132,7 +132,7 @@ export async function getOrderForCustomer(orderId, email) {
   })
   const data = await res.json().catch(() => ({}))
   if (!res.ok) {
-    const err = new Error(data.message || data.error || 'Order not found')
+    const err = new Error(data.message || data.error || 'We couldn’t find an order with those details. Please check your order reference and email.')
     err.status = res.status
     throw err
   }

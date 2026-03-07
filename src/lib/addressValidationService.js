@@ -24,12 +24,12 @@ export async function validateAddresses(addresses) {
       body: JSON.stringify(body),
     })
   } catch (err) {
-    const msg = isNetworkError(err?.message) ? 'Could not reach the server. Check that the backend is running and that the site was built with the correct API URL (VITE_API_URL) for this environment.' : (err?.message || 'Address validation failed')
+    const msg = isNetworkError(err?.message) ? 'We couldn’t check your address right now. Please try again in a moment.' : (err?.message || 'We couldn’t check that address. Please try again.')
     throw new Error(msg)
   }
   const data = await res.json().catch(() => ({}))
   if (!res.ok) {
-    const err = new Error(data.message || data.error || 'Address validation failed')
+    const err = new Error(data.message || data.error || 'We couldn’t check that address. Please try again.')
     err.code = data.code
     throw err
   }

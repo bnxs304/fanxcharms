@@ -342,17 +342,6 @@
   cursor: wait;
 }
 
-.checkout__submit--demo {
-  background: transparent;
-  color: var(--text-muted);
-  border: 1px solid var(--border);
-}
-
-.checkout__submit--demo:hover {
-  background: var(--bg-card);
-  color: var(--text);
-}
-
 .checkout__payment-note {
   font-size: 0.85rem;
   color: var(--text-muted);
