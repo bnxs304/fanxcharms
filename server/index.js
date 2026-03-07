@@ -12,6 +12,7 @@ const isProd = process.env.NODE_ENV === 'production'
 const app = express()
 const PORT = process.env.PORT || 3001
 const ORDERS_COLLECTION = 'orders'
+const PRODUCTS_COLLECTION = 'products'
 
 function safeMessage(err) {
   return isProd ? 'Something went wrong.' : (err?.message || 'Server error')
@@ -71,6 +72,36 @@ async function sendOrderConfirmationEmail(orderId, order) {
   }
 }
 
+/** Decrement product stock when an order is paid. Only products with a numeric stock field are updated. Runs inside a transaction so we only decrement once. */
+async function markOrderPaidAndDecrementStock(db, orderId) {
+  const orderRef = db.collection(ORDERS_COLLECTION).doc(orderId)
+  const productsRef = db.collection(PRODUCTS_COLLECTION)
+  return db.runTransaction(async (transaction) => {
+    const orderSnap = await transaction.get(orderRef)
+    if (!orderSnap.exists) throw new Error('Order not found')
+    const order = orderSnap.data()
+    if (order.status === 'paid') return { updated: false }
+    const items = order.items || []
+    for (const item of items) {
+      const productId = item.id
+      const qty = Number(item.quantity) || 0
+      if (!productId || qty <= 0) continue
+      const productRef = productsRef.doc(productId)
+      const productSnap = await transaction.get(productRef)
+      if (!productSnap.exists) continue
+      const product = productSnap.data()
+      if (product.stock == null || typeof product.stock !== 'number') continue
+      const newStock = Math.max(0, product.stock - qty)
+      transaction.update(productRef, { stock: newStock })
+    }
+    transaction.update(orderRef, {
+      status: 'paid',
+      updatedAt: admin.firestore.Timestamp.now(),
+    })
+    return { updated: true }
+  })
+}
+
 const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173'
 const corsOrigins = typeof corsOrigin === 'string' && corsOrigin.includes(',')
   ? corsOrigin.split(',').map((o) => o.trim()).filter(Boolean)
@@ -102,15 +133,10 @@ app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), asyn
     const orderId = session.metadata?.orderId || session.client_reference_id
     if (orderId && db) {
       try {
-        const ref = db.collection(ORDERS_COLLECTION).doc(orderId)
-        const snap = await ref.get()
-        if (snap.exists) {
-          const order = snap.data()
-          await ref.update({
-            status: 'paid',
-            updatedAt: admin.firestore.Timestamp.now(),
-          })
-          sendOrderConfirmationEmail(orderId, order).catch((e) => console.warn('Confirmation email failed:', e.message))
+        const { updated } = await markOrderPaidAndDecrementStock(db, orderId)
+        if (updated) {
+          const snap = await db.collection(ORDERS_COLLECTION).doc(orderId).get()
+          if (snap.exists) sendOrderConfirmationEmail(orderId, snap.data()).catch((e) => console.warn('Confirmation email failed:', e.message))
         }
       } catch (e) {
         console.error('Webhook order update/email error:', e.message)
@@ -224,6 +250,8 @@ app.post('/api/create-stripe-checkout', async (req, res) => {
 
   const stripe = new Stripe(secretKey)
   const amountCents = Math.round(Number(amount) * 100)
+  const baseSuccessUrl = success_url || `${(process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '')}/?order=success&orderId=${encodeURIComponent(orderId)}`
+  const finalSuccessUrl = baseSuccessUrl.includes('{CHECKOUT_SESSION_ID}') ? baseSuccessUrl : `${baseSuccessUrl}${baseSuccessUrl.includes('?') ? '&' : '?'}session_id={CHECKOUT_SESSION_ID}`
 
   try {
     const session = await stripe.checkout.sessions.create({
@@ -242,8 +270,8 @@ app.post('/api/create-stripe-checkout', async (req, res) => {
           quantity: 1,
         },
       ],
-      success_url: success_url || `${process.env.FRONTEND_URL || 'http://localhost:5173'}/?order=success&orderId=${encodeURIComponent(orderId)}`,
-      cancel_url: cancel_url || `${process.env.FRONTEND_URL || 'http://localhost:5173'}/checkout`,
+      success_url: finalSuccessUrl,
+      cancel_url: cancel_url || `${(process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '')}/checkout`,
       client_reference_id: String(orderId),
       metadata: { orderId: String(orderId) },
     })
@@ -315,6 +343,36 @@ app.post('/api/orders', async (req, res) => {
 })
 
 // Get order for customer (only if email matches)
+// Confirm order as paid (call when customer lands on success page with Stripe session_id – fallback if webhook delayed)
+app.post('/api/orders/:orderId/confirm-paid', async (req, res) => {
+  const secretKey = process.env.STRIPE_SECRET_KEY
+  if (!secretKey) return res.status(503).json({ error: 'Stripe not configured' })
+  if (!db) return res.status(503).json({ error: 'Orders not configured' })
+  const { orderId } = req.params
+  const sessionId = (req.body?.session_id || req.query?.session_id || '').trim()
+  if (!sessionId) {
+    return res.status(400).json({ error: 'Missing session_id', message: 'Provide Stripe Checkout session_id from the success URL.' })
+  }
+  try {
+    const stripe = new Stripe(secretKey)
+    const session = await stripe.checkout.sessions.retrieve(sessionId)
+    if (session.payment_status !== 'paid') {
+      return res.status(400).json({ error: 'Not paid', message: 'Session is not paid.' })
+    }
+    const sessionOrderId = session.metadata?.orderId || session.client_reference_id
+    if (sessionOrderId !== orderId) {
+      return res.status(400).json({ error: 'Order mismatch', message: 'Session does not match this order.' })
+    }
+    const snap = await db.collection(ORDERS_COLLECTION).doc(orderId).get()
+    if (!snap.exists) return res.status(404).json({ error: 'Order not found' })
+    const { updated } = await markOrderPaidAndDecrementStock(db, orderId)
+    res.json({ ok: true, status: 'paid', updated })
+  } catch (err) {
+    console.error('Confirm paid error:', err.message)
+    res.status(500).json({ error: 'Server error', message: err.type === 'StripeError' ? err.message : safeMessage(err) })
+  }
+})
+
 app.get('/api/orders/:orderId', async (req, res) => {
   if (!db) {
     return res.status(503).json({

@@ -1,13 +1,21 @@
+import { useEffect } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { useProducts } from '../hooks/useProducts'
+import { confirmOrderPaid } from '../lib/ordersService'
 import './Home.css'
 
 export default function Home() {
   const [searchParams] = useSearchParams()
   const orderSuccess = searchParams.get('order') === 'success'
   const orderId = searchParams.get('orderId') || ''
+  const sessionId = searchParams.get('session_id') || ''
   const { products, loading, error } = useProducts()
   const whatsNewProducts = products.slice(0, 4)
+
+  useEffect(() => {
+    if (!orderSuccess || !orderId || !sessionId) return
+    confirmOrderPaid(orderId, sessionId).catch(() => { /* ignore – webhook may have already updated */ })
+  }, [orderSuccess, orderId, sessionId])
 
   return (
     <div className="home">

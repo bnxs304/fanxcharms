@@ -57,6 +57,21 @@ export async function createOrder({ email, address, name, shippingMethod, shippi
   return { orderId: data.orderId }
 }
 
+/**
+ * Confirm order as paid (after Stripe redirect with session_id). Updates order status to 'paid' on the server.
+ * Call when the customer lands on the success page with session_id in the URL.
+ */
+export async function confirmOrderPaid(orderId, sessionId) {
+  const res = await fetch(`${API_URL}/api/orders/${encodeURIComponent(orderId)}/confirm-paid`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ session_id: sessionId }),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.message || data.error || 'Could not confirm payment')
+  return data
+}
+
 /** Admin: fetch all orders from Firestore (requires auth). */
 export async function getOrdersFromFirestore() {
   if (!isConfigured || !db) return []
