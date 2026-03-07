@@ -5,6 +5,7 @@ import { createOrder } from '../lib/ordersService'
 import { createStripeCheckout } from '../lib/stripeCheckout'
 import { getShippingRates } from '../lib/shippingRatesService'
 import { validateAddresses } from '../lib/addressValidationService'
+import { CONTACT_EMAIL } from '../constants/site'
 import './Checkout.css'
 
 const COUNTRY_OPTIONS = [
@@ -317,7 +318,7 @@ export default function Checkout() {
             {ratesError && <p className="checkout__rates-error" role="alert">{ratesError}</p>}
             {!ratesLoading && canShowShippingRates && rates.length === 0 && !ratesError && (
               <p className="checkout__rates-note checkout__rates-empty" role="status">
-                No shipping options available for this address. Please contact us for alternatives.
+                No shipping options available for this address. Please contact us at {CONTACT_EMAIL} for alternatives.
               </p>
             )}
             {!ratesLoading && rates.length > 0 && (
@@ -368,6 +369,7 @@ export default function Checkout() {
           <p className="checkout__total">
             Total <strong>£{(Number(orderTotal) || 0).toFixed(2)}</strong>
           </p>
+          <p className="checkout__tax-note">All prices include tax.</p>
 
           {paymentError && (
             <p className="checkout__error" role="alert">

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { CONTACT_EMAIL } from '../constants/site'
 import './Footer.css'
 
 export default function Footer() {
@@ -12,8 +13,9 @@ export default function Footer() {
           <Link to="/terms">General conditions</Link>
           {' / '}
           <Link to="/returns-refunds">Returns & Refunds</Link>
+          {' · '}
+          <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
         </span>
       </div>
     </footer>
   )
-}

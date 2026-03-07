@@ -66,6 +66,7 @@ export default function Cart() {
         <p className="cart__total">
           Subtotal <strong>£{cartTotal.toFixed(2)}</strong>
         </p>
+        <p className="cart__tax-note">All prices include tax.</p>
         <Link to="/checkout" className="cart__checkout-btn">Proceed to checkout</Link>
         <Link to="/" className="cart__continue">Continue shopping</Link>
       </div>

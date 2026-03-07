@@ -255,6 +255,13 @@
   color: var(--accent);
 }
 
+.checkout__tax-note {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: -0.25rem;
+  margin-bottom: 1rem;
+}
+
 .checkout__submit {
   width: 100%;
   padding: 1rem;

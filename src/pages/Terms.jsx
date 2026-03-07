@@ -1,3 +1,4 @@
+import { CONTACT_EMAIL } from '../constants/site'
 import './PolicyPage.css'
 
 export default function Terms() {
@@ -17,9 +18,9 @@ export default function Terms() {
       <section className="policy-page__section">
         <h2>Products and pricing</h2>
         <p>
-          We strive to display products and prices accurately. We reserve the right to correct errors,
-          limit quantities, and to change or discontinue products without notice. Prices are as shown
-          at the time of order; any applicable taxes or delivery charges will be shown before you pay.
+          We strive to display products and prices accurately. All prices include tax. We reserve the right
+          to correct errors, limit quantities, and to change or discontinue products without notice. Prices
+          are as shown at the time of order; delivery charges will be shown before you pay.
         </p>
       </section>
 
@@ -105,8 +106,8 @@ export default function Terms() {
       <section className="policy-page__section">
         <h2>Contact</h2>
         <p>
-          For questions about these Terms or your order, please contact us using the details on our
-          website.
+          For questions about these Terms or your order, contact us at{' '}
+          <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
         </p>
       </section>
     </div>

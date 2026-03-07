@@ -1,3 +1,4 @@
+import { CONTACT_EMAIL } from '../constants/site'
 import './PolicyPage.css'
 
 export default function ReturnsRefunds() {
@@ -57,8 +58,8 @@ export default function ReturnsRefunds() {
       <section className="policy-page__section">
         <h2>Contact</h2>
         <p>
-          For returns and refund requests, please use the contact details on our website or the email
-          address provided in your order confirmation.
+          For returns and refund requests, email us at{' '}
+          <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> or use the contact details on our website.
         </p>
       </section>
     </div>

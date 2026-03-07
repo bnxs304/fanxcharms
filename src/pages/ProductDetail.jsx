@@ -87,7 +87,7 @@ export default function ProductDetail() {
         <div className="product-detail__info">
           <span className="product-detail__category">{product.category}</span>
           <h1 className="product-detail__name">{product.name}</h1>
-          <p className="product-detail__price">£{product.price.toFixed(2)}</p>
+          <p className="product-detail__price">£{product.price.toFixed(2)} <span className="product-detail__tax">(All prices include tax)</span></p>
           {!inStock && (
             <p className="product-detail__out-of-stock" role="status">Out of stock</p>
           )}

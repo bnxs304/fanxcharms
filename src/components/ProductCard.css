@@ -56,6 +56,13 @@
   color: var(--accent);
 }
 
+.product-card__tax {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+
 .product-card__badge {
   position: absolute;
   bottom: 0.5rem;

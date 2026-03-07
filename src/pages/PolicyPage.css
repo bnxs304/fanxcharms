@@ -51,3 +51,8 @@
 .policy-page__section strong {
   font-weight: 600;
 }
+
+.policy-page__section a {
+  color: var(--primary);
+  text-decoration: underline;
+}

@@ -1,3 +1,4 @@
+import { CONTACT_EMAIL } from '../constants/site'
 import './PolicyPage.css'
 
 export default function PrivacyPolicy() {
@@ -89,8 +90,8 @@ export default function PrivacyPolicy() {
       <section className="policy-page__section">
         <h2>Contact</h2>
         <p>
-          For privacy-related questions or requests, please contact us using the details provided on
-          our website.
+          For privacy-related questions or requests, contact us at{' '}
+          <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
         </p>
       </section>
     </div>
