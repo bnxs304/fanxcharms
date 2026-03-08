@@ -58,7 +58,7 @@
 
 .whats-new__graphic-wrap {
   position: absolute;
-  left:4%; 
+  left: 4%;
   top: -2.5rem;
   margin: 1rem;
   transform: translateX(-50%);
@@ -66,6 +66,7 @@
   pointer-events: none;
   perspective: 1000px;
   animation: whats-new-float 4s ease-in-out infinite;
+  min-height: 100px;
 }
 
 @keyframes whats-new-float {
@@ -74,6 +75,15 @@
   }
   50% {
     transform: translateX(-50%) translateY(-4px) rotateY(3deg) rotateX(-2deg);
+  }
+}
+
+@keyframes whats-new-float-mobile {
+  0%, 100% {
+    transform: translateY(0) rotateY(-3deg) rotateX(2deg);
+  }
+  50% {
+    transform: translateY(-4px) rotateY(3deg) rotateX(-2deg);
   }
 }
 
@@ -126,11 +136,17 @@
   }
   .whats-new__graphic-wrap {
     top: -0.5rem;
-    left: 15%;
+    left: -1rem;
+    margin: 0;
+    min-height: 88px;
+    transform: none;
+    animation: whats-new-float-mobile 4s ease-in-out infinite;
   }
   .whats-new__graphic-img {
-    height: clamp(88px, 24vw, 112px);
-    max-width: min(85vw, 140px);
+    height: 100px;
+    width: auto;
+    max-width: 150px;
+    object-fit: contain;
   }
   .whats-new__grid {
     gap: 1rem;
