@@ -4,8 +4,8 @@
  */
 import { collection, getDocs, doc, getDoc, updateDoc, serverTimestamp, orderBy, query } from 'firebase/firestore'
 import { db, isConfigured } from './firebase'
+import { getApiUrl } from './apiUrl'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 const ORDERS_COLLECTION = 'orders'
 
 function snapshotToOrder(snap) {
@@ -33,7 +33,7 @@ function snapshotToOrder(snap) {
  * Create an order. Returns { orderId }.
  */
 export async function createOrder({ email, address, name, shippingMethod, shippingCost, items, total, currency = 'GBP' }) {
-  const res = await fetch(`${API_URL}/api/orders`, {
+  const res = await fetch(`${getApiUrl()}/api/orders`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -62,7 +62,7 @@ export async function createOrder({ email, address, name, shippingMethod, shippi
  * Call when the customer lands on the success page with session_id in the URL.
  */
 export async function confirmOrderPaid(orderId, sessionId) {
-  const res = await fetch(`${API_URL}/api/orders/${encodeURIComponent(orderId)}/confirm-paid`, {
+  const res = await fetch(`${getApiUrl()}/api/orders/${encodeURIComponent(orderId)}/confirm-paid`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ session_id: sessionId }),
@@ -127,7 +127,7 @@ export async function updateOrderTracking(id, { trackingNumber, carrier }) {
  */
 export async function getOrderForCustomer(orderId, email) {
   const params = new URLSearchParams({ email: email.trim() })
-  const res = await fetch(`${API_URL}/api/orders/${encodeURIComponent(orderId)}?${params}`, {
+  const res = await fetch(`${getApiUrl()}/api/orders/${encodeURIComponent(orderId)}?${params}`, {
     method: 'GET',
   })
   const data = await res.json().catch(() => ({}))

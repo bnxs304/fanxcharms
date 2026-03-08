@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { getProducts } from '../lib/productsService'
 
+const PRODUCTS_LOAD_TIMEOUT_MS = 15000
+
 export function useProducts() {
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -10,6 +12,14 @@ export function useProducts() {
     let cancelled = false
     setLoading(true)
     setError(null)
+
+    const timeoutId = setTimeout(() => {
+      if (cancelled) return
+      cancelled = true
+      setError('We couldn’t load the shop right now. Please check your connection and try again.')
+      setLoading(false)
+    }, PRODUCTS_LOAD_TIMEOUT_MS)
+
     getProducts()
       .then((data) => {
         if (!cancelled) setProducts(data)
@@ -24,9 +34,15 @@ export function useProducts() {
         }
       })
       .finally(() => {
-        if (!cancelled) setLoading(false)
+        if (!cancelled) {
+          clearTimeout(timeoutId)
+          setLoading(false)
+        }
       })
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+      clearTimeout(timeoutId)
+    }
   }, [])
 
   return { products, loading, error }

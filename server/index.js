@@ -72,6 +72,43 @@ async function sendOrderConfirmationEmail(orderId, order) {
   }
 }
 
+const SHOP_NOTIFICATION_EMAIL = process.env.SHOP_NOTIFICATION_EMAIL || 'shop@fanxcharms.com'
+
+/** Send a new-order notification to the shop email when an order is confirmed paid. */
+async function sendNewOrderNotificationToShop(orderId, order) {
+  const apiKey = process.env.RESEND_API_KEY
+  const from = process.env.EMAIL_FROM || 'Fan X Charms <onboarding@resend.dev>'
+  if (!apiKey) return
+  const to = SHOP_NOTIFICATION_EMAIL
+  const subject = `New order #${orderId} – Fan X Charms`
+  const itemsList = (order.items || []).map((i) => `  • ${i.name} × ${i.quantity} — £${(i.price * i.quantity).toFixed(2)}`).join('\n')
+  const html = `
+    <p><strong>A new order has been paid.</strong></p>
+    <p><strong>Order reference:</strong> ${orderId}</p>
+    <p><strong>Customer:</strong> ${(order.name || '').trim() || '—'}</p>
+    <p><strong>Email:</strong> ${order.email || '—'}</p>
+    <p><strong>Shipping address:</strong></p>
+    <pre>${(order.address || '').trim() || '—'}</pre>
+    <p><strong>Shipping method:</strong> ${order.shippingMethod || '—'}</p>
+    <p><strong>Items:</strong></p>
+    <pre>${itemsList}</pre>
+    <p><strong>Total:</strong> £${Number(order.total).toFixed(2)}</p>
+    <p>Track and manage: ${process.env.FRONTEND_URL || 'https://fanxcharms.com'}/admin (admin)</p>
+  `.replace(/\n\s+/g, '\n').trim()
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({ from, to, subject, html }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.message || res.statusText)
+  }
+}
+
 /** Decrement product stock when an order is paid. Only products with a numeric stock field are updated. Runs inside a transaction so we only decrement once. */
 async function markOrderPaidAndDecrementStock(db, orderId) {
   const orderRef = db.collection(ORDERS_COLLECTION).doc(orderId)
@@ -136,7 +173,11 @@ app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), asyn
         const { updated } = await markOrderPaidAndDecrementStock(db, orderId)
         if (updated) {
           const snap = await db.collection(ORDERS_COLLECTION).doc(orderId).get()
-          if (snap.exists) sendOrderConfirmationEmail(orderId, snap.data()).catch((e) => console.warn('Confirmation email failed:', e.message))
+          if (snap.exists) {
+            const orderData = snap.data()
+            sendOrderConfirmationEmail(orderId, orderData).catch((e) => console.warn('Confirmation email failed:', e.message))
+            sendNewOrderNotificationToShop(orderId, orderData).catch((e) => console.warn('Shop notification email failed:', e.message))
+          }
         }
       } catch (e) {
         console.error('Webhook order update/email error:', e.message)
@@ -360,6 +401,12 @@ app.post('/api/orders/:orderId/confirm-paid', async (req, res) => {
     const snap = await db.collection(ORDERS_COLLECTION).doc(orderId).get()
     if (!snap.exists) return res.status(404).json({ error: 'Order not found' })
     const { updated } = await markOrderPaidAndDecrementStock(db, orderId)
+    if (updated) {
+      const snap = await db.collection(ORDERS_COLLECTION).doc(orderId).get()
+      if (snap.exists) {
+        sendNewOrderNotificationToShop(orderId, snap.data()).catch((e) => console.warn('Shop notification email failed:', e.message))
+      }
+    }
     res.json({ ok: true, status: 'paid', updated })
   } catch (err) {
     console.error('Confirm paid error:', err.message)

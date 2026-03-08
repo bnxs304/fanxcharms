@@ -1,7 +1,7 @@
 /**
  * Address format validation via backend POST /api/addresses/validate (server-side, no external API).
  */
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+import { getApiUrl } from './apiUrl'
 
 /**
  * Validate one or more addresses.
@@ -18,7 +18,7 @@ export async function validateAddresses(addresses) {
   const body = Array.isArray(addresses) ? addresses : [addresses]
   let res
   try {
-    res = await fetch(`${API_URL}/api/addresses/validate`, {
+    res = await fetch(`${getApiUrl()}/api/addresses/validate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),

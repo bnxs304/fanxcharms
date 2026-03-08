@@ -1,7 +1,7 @@
 /**
  * Shipping rates via backend POST /api/shipping-rates (zone-based: UK / EU / International).
  */
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+import { getApiUrl } from './apiUrl'
 
 /**
  * Get shipping rates for a destination (country determines zone).
@@ -9,7 +9,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
  * @returns {Promise<{ rates: Array<{ id: string, carrier: string, serviceName: string, amount: number, currency: string, estimatedDays?: string }> }>}
  */
 export async function getShippingRates({ countryCode }) {
-  const res = await fetch(`${API_URL}/api/shipping-rates`, {
+  const res = await fetch(`${getApiUrl()}/api/shipping-rates`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

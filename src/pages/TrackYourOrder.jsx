@@ -35,7 +35,15 @@ export default function TrackYourOrder() {
       const data = await getOrderForCustomer(oid, em)
       setOrder(data)
     } catch (err) {
-      setError(err.status === 404 ? 'We couldn’t find an order with those details. Please check your order reference and email and try again.' : (err.message || 'Something went wrong. Please try again in a moment.'))
+      const msg = err?.message || ''
+      const isNetwork = /failed to fetch|load failed|network error|loadfailed/i.test(msg)
+      setError(
+        err.status === 404
+          ? 'We couldn’t find an order with those details. Please check your order reference and email and try again.'
+          : isNetwork
+            ? 'We couldn’t reach the server. Please check your connection and try again.'
+            : (msg || 'Something went wrong. Please try again in a moment.')
+      )
     } finally {
       setLoading(false)
     }

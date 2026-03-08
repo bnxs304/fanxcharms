@@ -2,8 +2,7 @@
  * Stripe Checkout – create session and redirect to Stripe-hosted payment page.
  * Backend must be configured with STRIPE_SECRET_KEY (see server/ and .env).
  */
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+import { getApiUrl } from './apiUrl'
 
 /**
  * Create a Stripe Checkout Session and return the redirect URL.
@@ -12,7 +11,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
  */
 export async function createStripeCheckout(opts) {
   const { amount, currency = 'gbp', orderId, description, success_url, cancel_url } = opts
-  const res = await fetch(`${API_URL}/api/create-stripe-checkout`, {
+  const res = await fetch(`${getApiUrl()}/api/create-stripe-checkout`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

@@ -17,13 +17,25 @@ import { products as staticProducts, getProductById as getStaticById } from '../
 
 const COLLECTION = 'products'
 
+/** Make path-only image URLs absolute so they work when the app is deployed (e.g. /images/foo → https://site.com/images/foo). */
+function ensureAbsoluteImageUrl(url) {
+  if (!url || typeof url !== 'string') return url
+  const u = url.trim()
+  if (u.startsWith('http://') || u.startsWith('https://')) return u
+  if (u.startsWith('/') && typeof window !== 'undefined' && window.location?.origin) {
+    return window.location.origin + u
+  }
+  return u
+}
+
 function normalizeImages(d) {
   const images = Array.isArray(d.images) && d.images.length > 0
     ? d.images.filter(Boolean)
     : (d.image ? [d.image] : [])
+  const image = images[0] ?? ''
   return {
-    images,
-    image: images[0] ?? '',
+    images: images.map(ensureAbsoluteImageUrl),
+    image: ensureAbsoluteImageUrl(image),
   }
 }
 
@@ -122,7 +134,12 @@ export function withImages(product) {
   const images = Array.isArray(product.images) && product.images.length > 0
     ? product.images
     : (product.image ? [product.image] : [])
-  return { ...product, images, image: images[0] ?? product.image ?? '' }
+  const image = images[0] ?? product.image ?? ''
+  return {
+    ...product,
+    images: images.map(ensureAbsoluteImageUrl),
+    image: ensureAbsoluteImageUrl(image),
+  }
 }
 
 /** Public: get product by id. Tries Firestore first, then static. */
