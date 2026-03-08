@@ -96,10 +96,6 @@ export default function Home() {
           <img src="/images/whats-new.png" alt="What's New" className="whats-new__graphic-img" />
         </div>
         <div className="whats-new__content">
-          <div className="whats-new__header">
-            <p className="whats-new__welcome">Welcome to Fan X Charms</p>
-            <p className="whats-new__update">Anime, K-Pop &amp; Gaming merchandise — new items every week</p>
-          </div>
           {loading && <p className="whats-new__loading">Loading…</p>}
           {error && <p className="whats-new__error" role="alert">{error}</p>}
           {!loading && !error && whatsNewProducts.length > 0 && (
@@ -159,6 +155,12 @@ export default function Home() {
                   </button>
                 </div>
               </div>
+              <nav className="whats-new__shop-btns" aria-label="Shop by category">
+                <Link to="/shop?cat=anime" className="whats-new__shop-btn">Shop Anime</Link>
+                <Link to="/shop?cat=k-pop" className="whats-new__shop-btn">Shop K-Pop</Link>
+                <Link to="/shop?cat=gaming" className="whats-new__shop-btn">Shop Gaming</Link>
+                <Link to="/shop" className="whats-new__shop-btn">Shop All</Link>
+              </nav>
             </>
           )}
           <div className="whats-new__footer">

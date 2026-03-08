@@ -62,7 +62,7 @@ export default function Header() {
 
   const navItems = [
     { to: '/', label: 'HOME', match: (path, qs) => path === '/' && !qs },
-    { to: '/shop', label: 'SHOP', match: (path) => path === '/shop' && !search },
+    { to: '/shop', label: 'SHOP ALL', match: (path) => path === '/shop' && !search },
     { to: '/shop?cat=anime', label: 'ANIME', match: (path, qs) => path === '/shop' && qs.includes('cat=anime') },
     { to: '/shop?cat=k-pop', label: 'K-POP', match: (path, qs) => path === '/shop' && qs.includes('cat=k-pop') },
     { to: '/shop?cat=gaming', label: 'GAMING', match: (path, qs) => path === '/shop' && qs.includes('cat=gaming') },

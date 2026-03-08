@@ -17,15 +17,22 @@ export default function PromoBar() {
 
   return (
     <div className="promo-bar">
-      {PROMOS.map((promo, i) => (
-        <span
-          key={i}
-          className={`promo-bar__item ${promo.className} ${i === activeIndex ? 'promo-bar__item--active' : ''}`}
-          aria-hidden={i !== activeIndex}
-        >
-          {promo.text}
-        </span>
-      ))}
+      <div
+        className="promo-bar__track"
+        style={{ '--promo-index': activeIndex }}
+        aria-live="polite"
+        aria-atomic
+      >
+        {PROMOS.map((promo, i) => (
+          <span
+            key={i}
+            className={`promo-bar__item ${promo.className} ${i === activeIndex ? 'promo-bar__item--active' : ''}`}
+            aria-hidden={i !== activeIndex}
+          >
+            {promo.text}
+          </span>
+        ))}
+      </div>
     </div>
   )
 }
