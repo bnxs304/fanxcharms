@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useProduct } from '../hooks/useProduct'
 import { isInStock } from '../lib/productsService'
@@ -41,7 +41,10 @@ export default function ProductDetail() {
   if (loading) {
     return (
       <div className="product-detail product-detail--missing">
-        <p>Loading product…</p>
+        <div className="product-detail__back-wrap">
+          <button type="button" className="product-detail__back" onClick={() => navigate(-1)}>← Back</button>
+        </div>
+        <p className="product-detail__missing-text">Loading product…</p>
       </div>
     )
   }
@@ -49,8 +52,11 @@ export default function ProductDetail() {
   if (error || !product) {
     return (
       <div className="product-detail product-detail--missing">
-        <p>{error || 'This product isn’t available or the link may be wrong. Try browsing the shop.'}</p>
-        <button type="button" onClick={() => navigate('/')}>Back to shop</button>
+        <div className="product-detail__back-wrap">
+          <button type="button" className="product-detail__back" onClick={() => navigate(-1)}>← Back</button>
+        </div>
+        <p className="product-detail__missing-text">{error || 'This product isn’t available or the link may be wrong. Try browsing the shop.'}</p>
+        <Link to="/shop" className="product-detail__missing-btn">Back to shop</Link>
       </div>
     )
   }
@@ -59,6 +65,9 @@ export default function ProductDetail() {
 
   return (
     <div className="product-detail">
+      <div className="product-detail__back-wrap">
+        <button type="button" className="product-detail__back" onClick={() => navigate(-1)}>← Back</button>
+      </div>
       <div className="product-detail__grid">
         <div className="product-detail__gallery">
           <div className="product-detail__image-wrap">
@@ -74,9 +83,10 @@ export default function ProductDetail() {
                 <button
                   key={`${url}-${i}`}
                   type="button"
-                  className={`product-detail__thumb ${i === selectedImageIndex ? 'active' : ''}`}
+                  className={`product-detail__thumb ${i === selectedImageIndex ? 'product-detail__thumb--active' : ''}`}
                   onClick={() => setSelectedImageIndex(i)}
                   aria-label={`View image ${i + 1}`}
+                  aria-current={i === selectedImageIndex ? 'true' : undefined}
                 >
                   <img src={url} alt="" />
                 </button>
@@ -87,20 +97,32 @@ export default function ProductDetail() {
         <div className="product-detail__info">
           <span className="product-detail__category">{product.category}</span>
           <h1 className="product-detail__name">{product.name}</h1>
-          <p className="product-detail__price">£{product.price.toFixed(2)} <span className="product-detail__tax">(All prices include tax)</span></p>
+          <p className="product-detail__price">£{product.price.toFixed(2)} <span className="product-detail__tax">inc. tax</span></p>
           {!inStock && (
             <p className="product-detail__out-of-stock" role="status">Out of stock</p>
           )}
-          <p className="product-detail__description">{product.description}</p>
-          {product.sizes.length > 1 && (
+          {product.description && (
+            <div className="product-detail__description-wrap">
+              <h3 className="product-detail__description-title">Description</h3>
+              <div className="product-detail__description">
+                {(product.description || '')
+                  .split(/\n\n+/)
+                  .filter((block) => block.trim())
+                  .map((block, i) => (
+                    <p key={i}>{block.trim().split(/\n/).join(' ')}</p>
+                  ))}
+              </div>
+            </div>
+          )}
+          {product.sizes?.length > 1 && (
             <div className="product-detail__sizes">
-              <label className="product-detail__label">Size</label>
+              <span className="product-detail__label">Size</span>
               <div className="product-detail__size-options">
                 {product.sizes.map((s) => (
                   <button
                     key={s}
                     type="button"
-                    className={`product-detail__size-btn ${size === s ? 'active' : ''}`}
+                    className={`product-detail__size-btn ${size === s ? 'product-detail__size-btn--active' : ''}`}
                     onClick={() => setSize(s)}
                   >
                     {s}
@@ -111,12 +133,17 @@ export default function ProductDetail() {
           )}
           <button
             type="button"
-            className={`product-detail__add ${added ? 'added' : ''} ${!inStock ? 'product-detail__add--disabled' : ''}`}
+            className={`product-detail__add ${added ? 'product-detail__add--added' : ''} ${!inStock ? 'product-detail__add--disabled' : ''}`}
             onClick={handleAddToCart}
             disabled={added || !inStock}
           >
             {!inStock ? 'Out of stock' : added ? 'Added to cart' : 'Add to cart'}
           </button>
+          {added && (
+            <p className="product-detail__cart-hint">
+              <Link to="/cart">View cart</Link> or <Link to="/shop">continue shopping</Link>
+            </p>
+          )}
         </div>
       </div>
     </div>
