@@ -45,9 +45,18 @@ export default function Terms() {
       <section className="policy-page__section">
         <h2>Delivery</h2>
         <p>
-          Delivery times and costs are indicated at checkout and in our shipping information. Risk and
+          Delivery times and costs are shown at checkout. UK delivery is offered at a fixed rate; rest of
+          world shipping fees start from <strong>£24.99</strong> and vary by destination and weight. Risk and
           ownership of goods pass to you on delivery. We are not responsible for delays caused by
           carriers or events outside our control, but we will help where we can.
+        </p>
+        <p>
+          If you are ordering goods for delivery outside of the UK, your order may be subject to import
+          duties, taxes (including VAT), and customs clearance fees once the goods reach the destination
+          country. Any such charges must be paid by you. Fan X Charms has no control over these charges
+          and cannot predict their amount. You will be the importer of record and responsible for any
+          import VAT, duty and clearance fees. We recommend checking with your local customs office or
+          postal service for more information about import taxes and duties that may apply.
         </p>
       </section>
 

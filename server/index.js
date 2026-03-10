@@ -205,7 +205,7 @@ app.get('/api/health', (req, res) => {
 function getZoneRates(countryCode) {
   const country = (countryCode || 'GB').toUpperCase().trim()
   const uk = Number(process.env.SHIPPING_UK) ?? 0
-  const international = Number(process.env.SHIPPING_INTERNATIONAL) || 19.99
+  const international = Number(process.env.SHIPPING_INTERNATIONAL) || 24.99
   if (country === 'GB') {
     return [{ id: 'zone-uk', carrier: 'Standard', serviceName: 'UK delivery', amount: uk, currency: 'GBP', estimatedDays: '2-4' }]
   }
