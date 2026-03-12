@@ -582,7 +582,9 @@ app.post('/api/orders/:orderId/confirm-paid', async (req, res) => {
     if (updated) {
       const snap = await db.collection(ORDERS_COLLECTION).doc(orderId).get()
       if (snap.exists) {
-        sendNewOrderNotificationToShop(orderId, snap.data()).catch((e) => console.warn('Shop notification email failed:', e.message))
+        const orderData = snap.data()
+        sendOrderConfirmationEmail(orderId, orderData).catch((e) => console.warn('Confirmation email failed:', e.message))
+        sendNewOrderNotificationToShop(orderId, orderData).catch((e) => console.warn('Shop notification email failed:', e.message))
       }
     }
     res.json({ ok: true, status: 'paid', updated })

@@ -15,6 +15,14 @@
   opacity: 0.9;
 }
 
+.home__banner--success {
+  background: var(--primary);
+}
+
+.home__banner--warning {
+  background: #b45309;
+}
+
 @media (max-width: 640px) {
   .home__banner {
     padding: 0.5rem 0.75rem;

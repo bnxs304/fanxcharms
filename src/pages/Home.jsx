@@ -3,6 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom'
 import { useProducts } from '../hooks/useProducts'
 import { useCart } from '../context/CartContext'
 import { confirmOrderPaid } from '../lib/ordersService'
+import { CONTACT_EMAIL } from '../constants/site'
 import './Home.css'
 
 function ProductCard({ product, isFocused }) {
@@ -28,6 +29,7 @@ export default function Home() {
   const scrollRef = useRef(null)
   const [focusedIndex, setFocusedIndex] = useState(0)
   const lastIndexRef = useRef(0)
+  const [confirmFailed, setConfirmFailed] = useState(false)
 
   const scrollToCard = (index) => {
     const el = scrollRef.current
@@ -44,8 +46,31 @@ export default function Home() {
 
   useEffect(() => {
     if (!orderSuccess || !orderId || !sessionId) return
-    confirmOrderPaid(orderId, sessionId).catch(() => { /* ignore – webhook may have already updated */ })
-    clearCart()
+    let cancelled = false
+    const maxAttempts = 3
+    const delayMs = (attempt) => (attempt + 1) * 1000
+
+    const run = async (attempt = 0) => {
+      if (cancelled) return
+      try {
+        await confirmOrderPaid(orderId, sessionId)
+        if (!cancelled) {
+          setConfirmFailed(false)
+          clearCart()
+        }
+      } catch (e) {
+        if (cancelled) return
+        if (attempt < maxAttempts - 1) {
+          await new Promise((r) => setTimeout(r, delayMs(attempt)))
+          run(attempt + 1)
+        } else {
+          setConfirmFailed(true)
+          clearCart()
+        }
+      }
+    }
+    run()
+    return () => { cancelled = true }
   }, [orderSuccess, orderId, sessionId, clearCart])
 
   useEffect(() => {
@@ -81,12 +106,21 @@ export default function Home() {
   return (
     <div className="home">
       {orderSuccess && (
-        <div className="home__banner home__banner--success">
-          <strong>Payment received.</strong> Your order is confirmed. We'll get it ready for you.
-          {orderId && (
-            <span className="home__banner-order">
-              {' '}Order ref: <strong>{orderId}</strong>. A confirmation email has been sent to you. You can <Link to="/track-your-order">track your order</Link> with this reference and your email.
-            </span>
+        <div className={`home__banner ${confirmFailed ? 'home__banner--warning' : 'home__banner--success'}`}>
+          {confirmFailed ? (
+            <>
+              <strong>Payment succeeded.</strong>
+              {' '}We couldn’t update your order status from this page. Your payment went through—please save your order reference: <strong>{orderId}</strong>. If you don’t receive a confirmation email, contact us at <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> with this reference.
+            </>
+          ) : (
+            <>
+              <strong>Payment received.</strong> Your order is confirmed. We'll get it ready for you.
+              {orderId && (
+                <span className="home__banner-order">
+                  {' '}Order ref: <strong>{orderId}</strong>. A confirmation email has been sent to you. You can <Link to="/track-your-order">track your order</Link> with this reference and your email.
+                </span>
+              )}
+            </>
           )}
         </div>
       )}
