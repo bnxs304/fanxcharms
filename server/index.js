@@ -320,20 +320,41 @@ async function markOrderPaidAndDecrementStock(db, orderId) {
     const order = orderSnap.data()
     if (order.status === 'paid') return { updated: false }
     const items = order.items || []
+
+    // Firestore transactions require all reads before any writes. First read all products.
+    const productIds = Array.from(
+      new Set(
+        items
+          .map((item) => item && item.id)
+          .filter((id) => typeof id === 'string' && id)
+      )
+    )
+
+    const productSnaps = new Map()
+    for (const productId of productIds) {
+      const productRef = productsRef.doc(productId)
+      const snap = await transaction.get(productRef)
+      if (snap.exists) {
+        productSnaps.set(productId, { ref: productRef, data: snap.data() })
+      }
+    }
+
+    // Now compute and apply all stock updates.
     for (const item of items) {
       const productId = item.id
       const qty = Number(item.quantity) || 0
       if (!productId || qty <= 0) continue
-      const productRef = productsRef.doc(productId)
-      const productSnap = await transaction.get(productRef)
-      if (!productSnap.exists) continue
-      const product = productSnap.data()
+      const entry = productSnaps.get(productId)
+      if (!entry) continue
+      const { ref: productRef, data: product } = entry
+
+      let updates = {}
 
       // Decrement global stock if numeric
-      let updates = {}
       if (product.stock != null && typeof product.stock === 'number') {
         const newStock = Math.max(0, product.stock - qty)
         updates.stock = newStock
+        product.stock = newStock
       }
 
       // Decrement variant stock when variants are present and size matches
@@ -348,6 +369,7 @@ async function markOrderPaidAndDecrementStock(db, orderId) {
             const newVariantStock = Math.max(0, current.stock - qty)
             variants[idx] = { ...current, stock: newVariantStock }
             updates.variants = variants
+            product.variants = variants
           }
         }
       }
