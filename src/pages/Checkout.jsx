@@ -4,7 +4,6 @@ import { useCart } from '../context/CartContext'
 import { createOrder } from '../lib/ordersService'
 import { createStripeCheckout } from '../lib/stripeCheckout'
 import { getShippingRates } from '../lib/shippingRatesService'
-import { validateAddresses } from '../lib/addressValidationService'
 import { CONTACT_EMAIL } from '../constants/site'
 import './Checkout.css'
 
@@ -92,19 +91,12 @@ export default function Checkout() {
   const [paymentLoading, setPaymentLoading] = useState(false)
   const [paymentError, setPaymentError] = useState(null)
   const [fieldErrors, setFieldErrors] = useState([])
-  const [addressValidation, setAddressValidation] = useState(null)
-  const [validatingAddress, setValidatingAddress] = useState(false)
-  const [validationSkippedDueToPlan, setValidationSkippedDueToPlan] = useState(false)
-
-  const addressIsValidated = addressValidation && (addressValidation.status === 'verified' || addressValidation.status === 'warning')
-  const validationUnavailableDueToPlan = addressValidation?.status === 'error' && addressValidation?.code === 'VALIDATION_PLAN_REQUIRED'
-  const canShowShippingRates = addressIsValidated || (validationSkippedDueToPlan && addressLine1.trim() && city.trim() && postcode.trim() && (countryCode === 'GB' || internationalCountry))
+  const canShowShippingRates =
+    !!addressLine1.trim() &&
+    !!city.trim() &&
+    !!postcode.trim() &&
+    (countryCode === 'GB' || !!internationalCountry)
   const countryCodeForApi = countryCode === 'INTL' ? (internationalCountry || 'US') : countryCode
-
-  useEffect(() => {
-    setAddressValidation(null)
-    setValidationSkippedDueToPlan(false)
-  }, [addressLine1, addressLine2, city, postcode, countryCode, internationalCountry])
 
   useEffect(() => {
     if (!canShowShippingRates) {
@@ -114,12 +106,10 @@ export default function Checkout() {
       setRatesLoading(false)
       return
     }
-    const matched = addressValidation?.matched_address || addressValidation?.original_address
-    const code = countryCode === 'INTL' ? (internationalCountry || 'US') : countryCode
     setRatesLoading(true)
     setRatesError(null)
     getShippingRates({
-      countryCode: matched?.country_code || code,
+      countryCode: countryCodeForApi,
     })
       .then(({ rates: r }) => {
         setRates(r || [])
@@ -134,44 +124,13 @@ export default function Checkout() {
         setSelectedRate(null)
       })
       .finally(() => setRatesLoading(false))
-  }, [countryCode, internationalCountry, postcode, canShowShippingRates, addressValidation?.matched_address, addressValidation?.original_address])
-
-  const handleValidateAddress = async () => {
-    if (!addressLine1.trim() || !postcode.trim()) return
-    setValidatingAddress(true)
-    setAddressValidation(null)
-    try {
-      const { results } = await validateAddresses([{
-        address_line1: addressLine1.trim(),
-        address_line2: addressLine2.trim() || undefined,
-        city_locality: city.trim() || undefined,
-        postal_code: postcode.trim(),
-        country_code: countryCodeForApi,
-      }])
-      const r = results[0]
-      setAddressValidation(r ? { status: r.status, matched_address: r.matched_address, original_address: r.original_address, messages: r.messages || [] } : null)
-    } catch (err) {
-      setAddressValidation({ status: 'error', matched_address: null, original_address: null, messages: [err.message], code: err.code })
-    } finally {
-      setValidatingAddress(false)
-    }
-  }
-
-  const applyMatchedAddress = () => {
-    const m = addressValidation?.matched_address
-    if (!m) return
-    setAddressLine1(m.address_line1 || addressLine1)
-    setAddressLine2(m.address_line2 || addressLine2)
-    setCity(m.city_locality || m.city || city)
-    setPostcode(m.postal_code || postcode)
-  }
+  }, [countryCode, internationalCountry, postcode, canShowShippingRates, countryCodeForApi])
 
   const handlePayWithStripe = async (e) => {
     e.preventDefault()
     setPaymentError(null)
     setFieldErrors([])
     const errors = validateCheckout({ email, confirmEmail, name, addressLine1, city, postcode, countryCode, internationalCountry })
-    if (!addressIsValidated && !validationSkippedDueToPlan) errors.push('Please validate your address above so we can show shipping options.')
     if (!selectedRate) errors.push('Please choose a shipping method.')
     if (errors.length > 0) {
       setFieldErrors(errors)
@@ -358,51 +317,9 @@ export default function Checkout() {
             />
           </div>
           <div className="checkout__field">
-            <p className="checkout__validate-note">Click “Validate address” below so we can confirm your details and show shipping options.</p>
-            <button
-              type="button"
-              className="checkout__validate-btn"
-              onClick={handleValidateAddress}
-              disabled={validatingAddress || !addressLine1.trim() || !city.trim() || !postcode.trim() || (countryCode === 'INTL' && !internationalCountry)}
-            >
-              {validatingAddress ? 'Validating…' : 'Validate address'}
-            </button>
-            {addressValidation && (
-              <div className={`checkout__validation checkout__validation--${addressValidation.status}`} role="status">
-                <p className="checkout__validation-status">
-                  {addressValidation.status === 'verified' && 'Address verified—you’re good to go.'}
-                  {addressValidation.status === 'warning' && 'Address checked. We’ve suggested a small formatting change you can apply if you like.'}
-                  {addressValidation.status === 'error' && 'We couldn’t verify this address. Please check the details and try again.'}
-                  {addressValidation.status === 'unverified' && 'Please check your country and postcode or ZIP code and try again.'}
-                </p>
-                {addressValidation.matched_address && (
-                  <button type="button" className="checkout__use-suggested" onClick={applyMatchedAddress}>
-                    Use suggested address
-                  </button>
-                )}
-                {addressValidation.messages?.length > 0 && (
-                  <ul className="checkout__validation-messages">
-                    {addressValidation.messages.map((msg, i) => (
-                      <li key={i}>{typeof msg === 'object' ? msg.message || JSON.stringify(msg) : msg}</li>
-                    ))}
-                  </ul>
-                )}
-                {validationUnavailableDueToPlan && (
-                  <button
-                    type="button"
-                    className="checkout__use-suggested checkout__continue-without-validation"
-                    onClick={() => setValidationSkippedDueToPlan(true)}
-                  >
-                    I’ll continue without address validation
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-          <div className="checkout__field">
             <label>Shipping method</label>
             {!canShowShippingRates && !ratesLoading && (
-              <p className="checkout__rates-note">Validate your address above and we’ll show you shipping options.</p>
+              <p className="checkout__rates-note">Enter your address above and we’ll show you shipping options.</p>
             )}
             {ratesLoading && <p className="checkout__rates-loading">Loading rates…</p>}
             {ratesError && <p className="checkout__rates-error" role="alert">{ratesError}</p>}
@@ -474,7 +391,7 @@ export default function Checkout() {
             type="button"
             className="checkout__submit checkout__submit--stripe"
             onClick={handlePayWithStripe}
-            disabled={paymentLoading || (!addressIsValidated && !validationSkippedDueToPlan) || !selectedRate || (countryCode === 'INTL' && !internationalCountry)}
+            disabled={paymentLoading || !selectedRate || (countryCode === 'INTL' && !internationalCountry)}
           >
             {paymentLoading ? 'Redirecting to checkout…' : 'Proceed to payment'}
           </button>

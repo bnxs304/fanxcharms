@@ -268,53 +268,6 @@ app.post('/api/shipping-rates', (req, res) => {
   res.json({ rates: getZoneRates(country) })
 })
 
-// In-server address format validation (no external API). Same request/response shape for checkout.
-const UK_POSTCODE_REGEX = /^[A-Z]{1,2}[0-9][0-9A-Z]?\s*[0-9][A-Z]{2}$/i
-
-function validateAddressFormat(addr) {
-  const line1 = (addr.address_line1 || '').trim()
-  const postal = (addr.postal_code || '').trim().replace(/\s/g, '')
-  const country = (addr.country_code || 'GB').toUpperCase().trim()
-  const messages = []
-  if (line1.length < 5) messages.push('Address line is too short.')
-  if (line1.length > 100) messages.push('Address line is too long.')
-  if (country === 'GB' && postal && !UK_POSTCODE_REGEX.test(postal)) {
-    messages.push('Please enter a valid UK postcode (e.g. SW1A 1AA).')
-  }
-  if (country.length !== 2) messages.push('Please select a valid country.')
-  const status = messages.length === 0 ? 'verified' : 'warning'
-  const matched_address = {
-    address_line1: line1,
-    address_line2: addr.address_line2 || null,
-    city_locality: addr.city_locality || addr.city || null,
-    state_province: addr.state_province || addr.state || null,
-    postal_code: postal || addr.postal_code || '',
-    country_code: country,
-  }
-  return { status, matched_address, messages }
-}
-
-app.post('/api/addresses/validate', (req, res) => {
-  const addresses = req.body
-  const list = Array.isArray(addresses) ? addresses : (addresses ? [addresses] : [])
-  if (list.length === 0 || list.length > 10) {
-    return res.status(400).json({
-      error: 'Invalid request',
-      message: 'Body must be an address object or array of 1–10 addresses with address_line1, postal_code, country_code.',
-    })
-  }
-  const normalized = list.map((a) => ({
-    address_line1: a.address_line1 || a.addressLine1 || '',
-    address_line2: a.address_line2 || a.addressLine2 || null,
-    city_locality: a.city_locality || a.city || null,
-    state_province: a.state_province || a.stateProvince || a.state || null,
-    postal_code: (a.postal_code || a.postalCode || a.postcode || '').trim(),
-    country_code: (a.country_code || a.countryCode || 'GB').toUpperCase().trim(),
-  }))
-  const results = normalized.map((addr) => validateAddressFormat(addr))
-  res.json({ results })
-})
-
 app.post('/api/create-stripe-checkout', async (req, res) => {
   const secretKey = process.env.STRIPE_SECRET_KEY
   if (!secretKey) {
