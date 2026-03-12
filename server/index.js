@@ -42,22 +42,124 @@ function initFirebase() {
 
 const db = initFirebase()
 
+function getEmailLogoUrl() {
+  const explicit = process.env.EMAIL_LOGO_URL
+  if (explicit && explicit.trim()) return explicit.trim()
+  const base = (process.env.FRONTEND_URL || 'https://fanxcharms.com').replace(/\/$/, '')
+  // Fallback path – update EMAIL_LOGO_URL in env if you host the logo elsewhere.
+  return `${base}/logo-email.png`
+}
+
+function renderEmailLayout({ title, bodyHtml, showManageLink, orderId }) {
+  const frontend = (process.env.FRONTEND_URL || 'https://fanxcharms.com').replace(/\/$/, '')
+  const manageUrl = `${frontend}/admin`
+  return `
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>${title}</title>
+    <style>
+      body { margin:0; padding:0; background:#f5f3ff; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:#0f172a; }
+      .wrapper { width:100%; padding:24px 0; }
+      .container { max-width:640px; margin:0 auto; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 8px 30px rgba(15,23,42,0.12); }
+      .header { padding:20px 28px 16px; border-bottom:1px solid #e5e7eb; background:linear-gradient(135deg,#f5f3ff,#eef2ff); }
+      .logo { height:40px; display:block; }
+      .title { margin:16px 0 0; font-size:20px; font-weight:700; color:#111827; }
+      .body { padding:24px 28px 28px; font-size:14px; line-height:1.6; }
+      .section-title { font-size:14px; font-weight:600; margin:20px 0 8px; color:#111827; }
+      .summary-table { width:100%; border-collapse:collapse; font-size:13px; }
+      .summary-table th,
+      .summary-table td { padding:6px 0; text-align:left; }
+      .summary-table th { font-weight:600; color:#4b5563; }
+      .summary-table td { color:#111827; }
+      .divider { border-top:1px solid #e5e7eb; margin:20px 0; }
+      .footer { padding:16px 28px 22px; font-size:12px; color:#6b7280; text-align:center; background:#f9fafb; }
+      .btn { display:inline-block; padding:9px 16px; border-radius:999px; background:#4f46e5; color:#ffffff !important; text-decoration:none; font-size:13px; font-weight:600; }
+      .muted { color:#6b7280; font-size:12px; }
+      .key-line { font-weight:600; color:#4b5563; }
+      a { color:#4f46e5; }
+      pre { background:#f9fafb; padding:10px 12px; border-radius:8px; font-size:12px; white-space:pre-wrap; }
+    </style>
+  </head>
+  <body>
+    <div class="wrapper">
+      <div class="container">
+        <div class="header">
+          <img src="${getEmailLogoUrl()}" alt="Fan X Charms" class="logo" />
+          <h1 class="title">${title}</h1>
+        </div>
+        <div class="body">
+          ${bodyHtml}
+        </div>
+        <div class="footer">
+          <p class="muted">
+            You’re receiving this email about your order with Fan X Charms.
+            If this wasn’t you, contact us at <a href="mailto:${process.env.SHOP_NOTIFICATION_EMAIL || 'shop@fanxcharms.com'}">${process.env.SHOP_NOTIFICATION_EMAIL || 'shop@fanxcharms.com'}</a>.
+          </p>
+          ${showManageLink ? `<p style="margin-top:8px;"><a href="${manageUrl}" class="btn">Open admin</a></p>` : ''}
+          <p style="margin-top:8px;" class="muted">Order reference: <span class="key-line">${orderId || '—'}</span></p>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
+  `.replace(/\n\s+$/gm, '').trim()
+}
+
 async function sendOrderConfirmationEmail(orderId, order) {
   const apiKey = process.env.RESEND_API_KEY
   const from = process.env.EMAIL_FROM || 'Fan X Charms <onboarding@resend.dev>'
   if (!apiKey) return
   const to = order.email
   const subject = `Order confirmation #${orderId} – Fan X Charms`
-  const itemsList = (order.items || []).map((i) => `  • ${i.name} × ${i.quantity} — £${(i.price * i.quantity).toFixed(2)}`).join('\n')
-  const html = `
-    <p>Thank you for your order.</p>
-    <p><strong>Order reference:</strong> ${orderId}</p>
-    <p><strong>Shipping:</strong> ${order.address}</p>
-    <p><strong>Items:</strong></p>
+  const frontend = (process.env.FRONTEND_URL || 'https://fanxcharms.com').replace(/\/$/, '')
+  const itemsList = (order.items || [])
+    .map(
+      (i) =>
+        `• ${i.name}${i.size ? ` (${i.size})` : ''} × ${i.quantity} — £${(
+          i.price * i.quantity
+        ).toFixed(2)}`
+    )
+    .join('\n')
+
+  const bodyHtml = `
+    <p>Hi${order.name ? ` ${order.name.split(' ')[0]}` : ''},</p>
+    <p>Thank you for your order with <strong>Fan X Charms</strong>. We’re getting it ready for you.</p>
+
+    <p class="key-line">Order reference: ${orderId}</p>
+
+    <div class="divider"></div>
+
+    <h3 class="section-title">Order summary</h3>
+    <table class="summary-table">
+      <tr>
+        <th scope="row">Total</th>
+        <td>£${Number(order.total).toFixed(2)} ${order.currency || 'GBP'}</td>
+      </tr>
+      <tr>
+        <th scope="row">Shipping</th>
+        <td>${order.shippingMethod || 'Standard'}${order.shippingCost ? ` – £${Number(order.shippingCost).toFixed(2)}` : ''}</td>
+      </tr>
+      <tr>
+        <th scope="row">Shipping address</th>
+        <td>${(order.address || '').replace(/\n/g, '<br />')}</td>
+      </tr>
+    </table>
+
+    <h3 class="section-title">Items</h3>
     <pre>${itemsList}</pre>
-    <p><strong>Total:</strong> £${Number(order.total).toFixed(2)}</p>
-    <p>Track your order: ${process.env.FRONTEND_URL || 'https://fanxcharms.com'}/track-your-order</p>
-  `.replace(/\n\s+/g, '\n').trim()
+
+    <div class="divider"></div>
+
+    <p>You can check the latest status of your order at any time:</p>
+    <p><a href="${frontend}/track-your-order" class="btn">Track your order</a></p>
+
+    <p class="muted">You’ll receive another email once your order has shipped.</p>
+  `
+
+  const html = renderEmailLayout({ title: 'Order confirmed', bodyHtml, showManageLink: false, orderId })
+
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -92,23 +194,40 @@ async function sendOrderShippedEmail(orderId, order) {
     .join('\n')
   const trackingLine =
     (order.carrier || order.trackingNumber)
-      ? `<p><strong>Tracking:</strong> ${(order.carrier || '').trim()} ${
-          (order.trackingNumber || '').trim()
-        }</p>`
+      ? `<tr><th scope="row">Tracking</th><td>${(order.carrier || '').trim()} ${(order.trackingNumber || '').trim()}</td></tr>`
       : ''
-  const html = `
-    <p>Good news – your order is on the way.</p>
-    <p><strong>Order reference:</strong> ${orderId}</p>
-    ${trackingLine}
-    <p><strong>Shipping address:</strong></p>
-    <pre>${(order.address || '').trim() || '—'}</pre>
-    <p><strong>Items:</strong></p>
+  const frontend = (process.env.FRONTEND_URL || 'https://fanxcharms.com').replace(/\/$/, '')
+  const bodyHtml = `
+    <p>Hi${order.name ? ` ${order.name.split(' ')[0]}` : ''},</p>
+    <p>Good news – your <strong>Fan X Charms</strong> order is on the way.</p>
+
+    <p class="key-line">Order reference: ${orderId}</p>
+
+    <div class="divider"></div>
+
+    <h3 class="section-title">Shipping details</h3>
+    <table class="summary-table">
+      <tr>
+        <th scope="row">Service</th>
+        <td>${order.shippingMethod || 'Standard'}</td>
+      </tr>
+      ${trackingLine}
+      <tr>
+        <th scope="row">Shipping address</th>
+        <td>${(order.address || '').replace(/\n/g, '<br />')}</td>
+      </tr>
+    </table>
+
+    <h3 class="section-title">Items</h3>
     <pre>${itemsList}</pre>
-    <p><strong>Total:</strong> £${Number(order.total).toFixed(2)}</p>
-    <p>You can check the latest status here: ${(process.env.FRONTEND_URL || 'https://fanxcharms.com').replace(/\/$/, '')}/track-your-order</p>
+
+    <div class="divider"></div>
+
+    <p>You can follow your order and check the latest status here:</p>
+    <p><a href="${frontend}/track-your-order" class="btn">Track your order</a></p>
   `
-    .replace(/\n\s+/g, '\n')
-    .trim()
+
+  const html = renderEmailLayout({ title: 'Your order has shipped', bodyHtml, showManageLink: false, orderId })
 
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -132,19 +251,51 @@ async function sendNewOrderNotificationToShop(orderId, order) {
   const to = SHOP_NOTIFICATION_EMAIL
   const subject = `New order #${orderId} – Fan X Charms`
   const itemsList = (order.items || []).map((i) => `  • ${i.name} × ${i.quantity} — £${(i.price * i.quantity).toFixed(2)}`).join('\n')
-  const html = `
+  const frontend = (process.env.FRONTEND_URL || 'https://fanxcharms.com').replace(/\/$/, '')
+  const bodyHtml = `
     <p><strong>A new order has been paid.</strong></p>
-    <p><strong>Order reference:</strong> ${orderId}</p>
-    <p><strong>Customer:</strong> ${(order.name || '').trim() || '—'}</p>
-    <p><strong>Email:</strong> ${order.email || '—'}</p>
-    <p><strong>Shipping address:</strong></p>
-    <pre>${(order.address || '').trim() || '—'}</pre>
-    <p><strong>Shipping method:</strong> ${order.shippingMethod || '—'}</p>
-    <p><strong>Items:</strong></p>
+    <p class="key-line">Order reference: ${orderId}</p>
+
+    <div class="divider"></div>
+
+    <h3 class="section-title">Customer</h3>
+    <table class="summary-table">
+      <tr>
+        <th scope="row">Name</th>
+        <td>${(order.name || '').trim() || '—'}</td>
+      </tr>
+      <tr>
+        <th scope="row">Email</th>
+        <td>${order.email || '—'}</td>
+      </tr>
+      <tr>
+        <th scope="row">Address</th>
+        <td>${(order.address || '').replace(/\n/g, '<br />') || '—'}</td>
+      </tr>
+    </table>
+
+    <h3 class="section-title">Order details</h3>
+    <table class="summary-table">
+      <tr>
+        <th scope="row">Total</th>
+        <td>£${Number(order.total).toFixed(2)} ${order.currency || 'GBP'}</td>
+      </tr>
+      <tr>
+        <th scope="row">Shipping</th>
+        <td>${order.shippingMethod || '—'}${order.shippingCost ? ` – £${Number(order.shippingCost).toFixed(2)}` : ''}</td>
+      </tr>
+    </table>
+
+    <h3 class="section-title">Items</h3>
     <pre>${itemsList}</pre>
-    <p><strong>Total:</strong> £${Number(order.total).toFixed(2)}</p>
-    <p>Track and manage: ${process.env.FRONTEND_URL || 'https://fanxcharms.com'}/admin (admin)</p>
-  `.replace(/\n\s+/g, '\n').trim()
+
+    <div class="divider"></div>
+
+    <p><a href="${frontend}/admin" class="btn">Open in admin</a></p>
+  `
+
+  const html = renderEmailLayout({ title: 'New paid order', bodyHtml, showManageLink: true, orderId })
+
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -177,9 +328,33 @@ async function markOrderPaidAndDecrementStock(db, orderId) {
       const productSnap = await transaction.get(productRef)
       if (!productSnap.exists) continue
       const product = productSnap.data()
-      if (product.stock == null || typeof product.stock !== 'number') continue
-      const newStock = Math.max(0, product.stock - qty)
-      transaction.update(productRef, { stock: newStock })
+
+      // Decrement global stock if numeric
+      let updates = {}
+      if (product.stock != null && typeof product.stock === 'number') {
+        const newStock = Math.max(0, product.stock - qty)
+        updates.stock = newStock
+      }
+
+      // Decrement variant stock when variants are present and size matches
+      if (Array.isArray(product.variants) && product.variants.length > 0 && item.size) {
+        const variants = product.variants.map((v) => ({ ...v }))
+        const idx = variants.findIndex(
+          (v) => (v && (v.size || '').toString()) === (item.size || '').toString()
+        )
+        if (idx >= 0) {
+          const current = variants[idx]
+          if (current && typeof current.stock === 'number') {
+            const newVariantStock = Math.max(0, current.stock - qty)
+            variants[idx] = { ...current, stock: newVariantStock }
+            updates.variants = variants
+          }
+        }
+      }
+
+      if (Object.keys(updates).length > 0) {
+        transaction.update(productRef, updates)
+      }
     }
     transaction.update(orderRef, {
       status: 'paid',
