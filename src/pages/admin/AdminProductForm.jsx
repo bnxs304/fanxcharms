@@ -35,6 +35,7 @@ const defaultProduct = {
   category: '',
   sizes: 'One Size',
   stock: '',
+  variants: [],
 }
 
 export default function AdminProductForm() {
@@ -61,6 +62,15 @@ export default function AdminProductForm() {
       .then((p) => {
         if (p) {
           const images = Array.isArray(p.images) && p.images.length > 0 ? p.images : (p.image ? [p.image] : [])
+          const variants = Array.isArray(p.variants)
+            ? p.variants.map((v) => ({
+                size: v?.size ?? '',
+                stock:
+                  v?.stock != null && v.stock !== ''
+                    ? String(v.stock)
+                    : '',
+              }))
+            : []
           setForm({
             name: p.name,
             price: String(p.price),
@@ -69,6 +79,7 @@ export default function AdminProductForm() {
             category: p.category ?? '',
             sizes: Array.isArray(p.sizes) ? p.sizes.join(', ') : 'One Size',
             stock: p.stock != null ? String(p.stock) : '',
+            variants,
           })
         }
       })
@@ -87,6 +98,29 @@ export default function AdminProductForm() {
     }))
   }
 
+  const handleVariantChange = (index, field, value) => {
+    setForm((prev) => ({
+      ...prev,
+      variants: prev.variants.map((v, i) =>
+        i === index ? { ...v, [field]: value } : v
+      ),
+    }))
+  }
+
+  const addVariant = () => {
+    setForm((prev) => ({
+      ...prev,
+      variants: [...(prev.variants || []), { size: '', stock: '' }],
+    }))
+  }
+
+  const removeVariant = (index) => {
+    setForm((prev) => ({
+      ...prev,
+      variants: prev.variants.filter((_, i) => i !== index),
+    }))
+  }
+
   const addImageUrl = (url) => {
     const trimmed = url?.trim()
     if (!trimmed) return
@@ -99,6 +133,14 @@ export default function AdminProductForm() {
     setSaving(true)
     const sizes = form.sizes.split(',').map((s) => s.trim()).filter(Boolean)
     const images = Array.isArray(form.images) ? form.images.filter(Boolean) : []
+    const variants = Array.isArray(form.variants)
+      ? form.variants
+          .map((v) => ({
+            size: (v.size ?? '').trim(),
+            stock: v.stock,
+          }))
+          .filter((v) => v.size)
+      : []
     const payload = {
       name: form.name.trim(),
       price: parseFloat(form.price) || 0,
@@ -107,6 +149,7 @@ export default function AdminProductForm() {
       category: form.category.trim(),
       sizes: sizes.length ? sizes : ['One Size'],
       stock: form.stock === '' ? null : parseInt(form.stock, 10),
+      variants,
     }
     try {
       if (isNew) {
@@ -181,6 +224,51 @@ export default function AdminProductForm() {
         <div className="admin__field">
           <label htmlFor="stock">Stock (leave empty for no limit)</label>
           <input id="stock" name="stock" type="number" min="0" value={form.stock} onChange={handleChange} />
+        </div>
+        <div className="admin__field">
+          <label>Variations (optional)</label>
+          <p className="admin__hint">
+            Add variations (for example sizes or styles) with their own stock. When variations are present,
+            stock per variation is used for the product detail and cart limits.
+          </p>
+          <div className="admin__variants">
+            {form.variants && form.variants.length > 0 && (
+              <div className="admin__variants-list">
+                {form.variants.map((variant, index) => (
+                  <div key={index} className="admin__variants-row">
+                    <input
+                      type="text"
+                      placeholder="Variation (e.g. One Size, S, M, L)"
+                      value={variant.size}
+                      onChange={(e) => handleVariantChange(index, 'size', e.target.value)}
+                    />
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="Stock"
+                      value={variant.stock}
+                      onChange={(e) => handleVariantChange(index, 'stock', e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className="admin__image-list-remove"
+                      onClick={() => removeVariant(index)}
+                      aria-label="Remove variation"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <button
+              type="button"
+              className="admin__btn admin__btn--small"
+              onClick={addVariant}
+            >
+              Add variation
+            </button>
+          </div>
         </div>
         <div className="admin__actions">
           <button type="submit" className="admin__btn admin__btn--primary" disabled={saving}>

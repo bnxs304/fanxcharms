@@ -103,12 +103,32 @@ export async function getOrderByIdFromFirestore(id) {
 
 /** Admin: update order status. */
 export async function updateOrderStatus(id, status) {
-  if (!isConfigured || !db) throw new Error('Firebase not configured')
-  const ref = doc(db, ORDERS_COLLECTION, id)
-  await updateDoc(ref, {
-    status: String(status),
-    updatedAt: serverTimestamp(),
-  })
+  // Prefer backend API so we can send customer emails on status changes (e.g. shipped).
+  try {
+    const res = await fetch(`${getApiUrl()}/api/orders/${encodeURIComponent(id)}/status`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: String(status) }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      const err = new Error(data.message || data.error || 'Failed to update order status.')
+      err.status = res.status
+      throw err
+    }
+    return data
+  } catch (err) {
+    // Fallback: if backend is unreachable but Firebase client is configured, update directly (no email).
+    if (isConfigured && db) {
+      const ref = doc(db, ORDERS_COLLECTION, id)
+      await updateDoc(ref, {
+        status: String(status),
+        updatedAt: serverTimestamp(),
+      })
+      return { ok: true, status: String(status), fallback: true }
+    }
+    throw err
+  }
 }
 
 /** Admin: update order tracking (carrier + tracking number). */

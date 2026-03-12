@@ -43,6 +43,17 @@ function snapshotToProduct(docSnap) {
   if (!docSnap.exists()) return null
   const d = docSnap.data()
   const { images, image } = normalizeImages(d)
+  const variants = Array.isArray(d.variants)
+    ? d.variants
+        .map((v) => ({
+          size: v?.size ?? '',
+          stock:
+            v?.stock != null && v.stock !== ''
+              ? Number(v.stock)
+              : null,
+        }))
+        .filter((v) => v.size)
+    : []
   return {
     id: docSnap.id,
     name: d.name ?? '',
@@ -53,6 +64,7 @@ function snapshotToProduct(docSnap) {
     category: d.category ?? '',
     sizes: Array.isArray(d.sizes) ? d.sizes : ['One Size'],
     stock: d.stock != null ? Number(d.stock) : undefined,
+    variants,
   }
 }
 
@@ -87,6 +99,17 @@ export async function getProductByIdFromFirestore(id) {
 export async function createProduct(data) {
   if (!isConfigured || !db) throw new Error('Firebase not configured')
   const images = Array.isArray(data.images) ? data.images.filter(Boolean) : (data.image ? [data.image] : [])
+  const variants = Array.isArray(data.variants)
+    ? data.variants
+        .map((v) => ({
+          size: (v.size ?? '').trim(),
+          stock:
+            v.stock === '' || v.stock == null
+              ? null
+              : Number(v.stock),
+        }))
+        .filter((v) => v.size)
+    : []
   const payload = {
     name: data.name,
     price: Number(data.price),
@@ -96,6 +119,7 @@ export async function createProduct(data) {
     category: data.category ?? '',
     sizes: Array.isArray(data.sizes) ? data.sizes : ['One Size'],
     stock: data.stock != null ? Number(data.stock) : null,
+     variants: variants.length ? variants : [],
     updatedAt: serverTimestamp(),
   }
   const ref = await addDoc(collection(db, COLLECTION), payload)
@@ -107,6 +131,17 @@ export async function updateProduct(id, data) {
   if (!isConfigured || !db) throw new Error('Firebase not configured')
   const ref = doc(db, COLLECTION, id)
   const images = Array.isArray(data.images) ? data.images.filter(Boolean) : (data.image ? [data.image] : [])
+  const variants = Array.isArray(data.variants)
+    ? data.variants
+        .map((v) => ({
+          size: (v.size ?? '').trim(),
+          stock:
+            v.stock === '' || v.stock == null
+              ? null
+              : Number(v.stock),
+        }))
+        .filter((v) => v.size)
+    : []
   const payload = {
     name: data.name,
     price: Number(data.price),
@@ -116,6 +151,7 @@ export async function updateProduct(id, data) {
     category: data.category ?? '',
     sizes: Array.isArray(data.sizes) ? data.sizes : ['One Size'],
     stock: data.stock != null ? Number(data.stock) : null,
+    variants: variants.length ? variants : [],
     updatedAt: serverTimestamp(),
   }
   await updateDoc(ref, payload)
@@ -159,6 +195,15 @@ export async function getProducts() {
 /** In-stock check (works for both Firestore and static shape). Stock 0 = out of stock; null/undefined = no limit. */
 export function isInStock(product) {
   if (!product) return false
+  if (Array.isArray(product.variants) && product.variants.length > 0) {
+    const anyInStock = product.variants.some((v) => {
+      if (v == null) return false
+      if (v.stock == null || v.stock === '') return true
+      const n = Number(v.stock)
+      return !Number.isNaN(n) && n > 0
+    })
+    return anyInStock
+  }
   if (product.stock == null || product.stock === '') return true
   const n = Number(product.stock)
   return !Number.isNaN(n) && n > 0

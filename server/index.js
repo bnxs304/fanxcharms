@@ -74,6 +74,56 @@ async function sendOrderConfirmationEmail(orderId, order) {
 
 const SHOP_NOTIFICATION_EMAIL = process.env.SHOP_NOTIFICATION_EMAIL || 'shop@fanxcharms.com'
 
+/** Send a "your order has shipped" email to the customer when status is updated to shipped. */
+async function sendOrderShippedEmail(orderId, order) {
+  const apiKey = process.env.RESEND_API_KEY
+  const from = process.env.EMAIL_FROM || 'Fan X Charms <onboarding@resend.dev>'
+  if (!apiKey) return
+  const to = order.email
+  if (!to) return
+  const subject = `Your order #${orderId} has shipped – Fan X Charms`
+  const itemsList = (order.items || [])
+    .map(
+      (i) =>
+        `  • ${i.name}${i.size ? ` (${i.size})` : ''} × ${i.quantity} — £${(
+          i.price * i.quantity
+        ).toFixed(2)}`
+    )
+    .join('\n')
+  const trackingLine =
+    (order.carrier || order.trackingNumber)
+      ? `<p><strong>Tracking:</strong> ${(order.carrier || '').trim()} ${
+          (order.trackingNumber || '').trim()
+        }</p>`
+      : ''
+  const html = `
+    <p>Good news – your order is on the way.</p>
+    <p><strong>Order reference:</strong> ${orderId}</p>
+    ${trackingLine}
+    <p><strong>Shipping address:</strong></p>
+    <pre>${(order.address || '').trim() || '—'}</pre>
+    <p><strong>Items:</strong></p>
+    <pre>${itemsList}</pre>
+    <p><strong>Total:</strong> £${Number(order.total).toFixed(2)}</p>
+    <p>You can check the latest status here: ${(process.env.FRONTEND_URL || 'https://fanxcharms.com').replace(/\/$/, '')}/track-your-order</p>
+  `
+    .replace(/\n\s+/g, '\n')
+    .trim()
+
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({ from, to, subject, html }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.message || res.statusText)
+  }
+}
+
 /** Send a new-order notification to the shop email when an order is confirmed paid. */
 async function sendNewOrderNotificationToShop(orderId, order) {
   const apiKey = process.env.RESEND_API_KEY
@@ -411,6 +461,55 @@ app.post('/api/orders/:orderId/confirm-paid', async (req, res) => {
   } catch (err) {
     console.error('Confirm paid error:', err.message)
     res.status(500).json({ error: 'Server error', message: err.type === 'StripeError' ? err.message : safeMessage(err) })
+  }
+})
+
+// Admin: update order status and send customer email when shipped.
+app.post('/api/orders/:orderId/status', async (req, res) => {
+  if (!db) {
+    return res.status(503).json({
+      error: 'Orders not configured',
+      message:
+        'Set Firebase Admin credentials (FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY or GOOGLE_APPLICATION_CREDENTIALS).',
+    })
+  }
+  const { orderId } = req.params
+  const newStatus = String(req.body?.status || '').trim()
+  if (!orderId || !newStatus) {
+    return res.status(400).json({
+      error: 'Missing fields',
+      message: 'OrderId and status are required.',
+    })
+  }
+  try {
+    const ref = db.collection(ORDERS_COLLECTION).doc(orderId)
+    const snap = await ref.get()
+    if (!snap.exists) {
+      return res.status(404).json({ error: 'Order not found' })
+    }
+    const before = snap.data()
+    await ref.update({
+      status: newStatus,
+      updatedAt: admin.firestore.Timestamp.now(),
+    })
+    // Reload order after update for freshest data (e.g. tracking added separately)
+    const updatedSnap = await ref.get()
+    const updatedOrder = updatedSnap.exists ? updatedSnap.data() : before
+    if (newStatus === 'shipped') {
+      sendOrderShippedEmail(orderId, updatedOrder).catch((e) =>
+        console.warn('Shipped email failed:', e.message)
+      )
+    }
+    res.json({
+      ok: true,
+      status: newStatus,
+    })
+  } catch (err) {
+    console.error('Update order status error:', err.message)
+    res.status(500).json({
+      error: 'Server error',
+      message: safeMessage(err),
+    })
   }
 })
 

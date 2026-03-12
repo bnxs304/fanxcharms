@@ -14,9 +14,16 @@ export default function ProductDetail() {
   const [added, setAdded] = useState(false)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const images = (product?.images?.length ? product.images : product?.image ? [product.image] : [])
+  const variants = Array.isArray(product?.variants) ? product.variants : []
+
+  const sizeOptions = variants.length
+    ? [...new Set(variants.map((v) => v?.size).filter(Boolean))]
+    : (product?.sizes || ['One Size'])
 
   useEffect(() => {
-    if (product?.sizes?.length) setSize(product.sizes[0])
+    if (sizeOptions?.length) {
+      setSize(sizeOptions[0])
+    }
   }, [product])
 
   useEffect(() => {
@@ -24,8 +31,23 @@ export default function ProductDetail() {
   }, [id])
 
   const handleAddToCart = () => {
-    if (!product || !isInStock(product)) return
-    const maxQuantity = product.stock != null && product.stock > 0 ? product.stock : null
+    if (!product) return
+    const selectedVariant =
+      variants.length && size
+        ? variants.find((v) => v?.size === size)
+        : null
+    const variantStock =
+      selectedVariant && selectedVariant.stock != null && selectedVariant.stock !== ''
+        ? Number(selectedVariant.stock)
+        : null
+    const productInStock = variants.length
+      ? (variantStock == null || variantStock > 0)
+      : isInStock(product)
+    if (!productInStock) return
+    const maxQuantity =
+      variants.length
+        ? (variantStock != null && variantStock > 0 ? variantStock : null)
+        : (product.stock != null && product.stock > 0 ? product.stock : null)
     addToCart({
       id: product.id,
       name: product.name,
@@ -61,7 +83,17 @@ export default function ProductDetail() {
     )
   }
 
-  const inStock = isInStock(product)
+  const selectedVariant =
+    variants.length && size
+      ? variants.find((v) => v?.size === size)
+      : null
+  const variantStock =
+    selectedVariant && selectedVariant.stock != null && selectedVariant.stock !== ''
+      ? Number(selectedVariant.stock)
+      : null
+  const inStock = variants.length
+    ? (variantStock == null || variantStock > 0)
+    : isInStock(product)
 
   return (
     <div className="product-detail">
@@ -114,11 +146,11 @@ export default function ProductDetail() {
               </div>
             </div>
           )}
-          {product.sizes?.length > 1 && (
+          {sizeOptions?.length > 1 && (
             <div className="product-detail__sizes">
               <span className="product-detail__label">Size</span>
               <div className="product-detail__size-options">
-                {product.sizes.map((s) => (
+                {sizeOptions.map((s) => (
                   <button
                     key={s}
                     type="button"
