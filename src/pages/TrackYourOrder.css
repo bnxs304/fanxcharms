@@ -48,7 +48,7 @@
 
 .track-order__error {
   font-size: 0.9rem;
-  color: #b91c1c;
+  color: var(--error);
 }
 
 .track-order__submit {
@@ -86,7 +86,7 @@
   border: 1px solid #f59e0b;
   border-radius: var(--radius);
   font-size: 0.9rem;
-  color: #92400e;
+  color: var(--warning);
 }
 
 .track-order__pending-notice p {

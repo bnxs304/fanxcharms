@@ -22,7 +22,7 @@
 }
 
 .shop__error {
-  color: #b91c1c;
+  color: var(--error);
   margin-bottom: 1rem;
 }
 

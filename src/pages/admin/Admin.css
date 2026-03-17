@@ -216,7 +216,7 @@
 }
 
 .admin__image-list-remove:hover {
-  background: #b91c1c;
+  background: var(--error);
 }
 
 .admin__field--url {
@@ -230,7 +230,7 @@
 
 .admin__error {
   font-size: 0.9rem;
-  color: #b91c1c;
+  color: var(--error);
 }
 
 
@@ -270,8 +270,8 @@
 }
 
 .admin__btn--danger {
-  color: #b91c1c;
-  border-color: #b91c1c;
+  color: var(--error);
+  border-color: var(--error);
 }
 
 .admin__btn--danger:hover {

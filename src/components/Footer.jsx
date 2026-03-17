@@ -6,7 +6,7 @@ export default function Footer() {
   return (
     <footer className="footer">
       <div className="footer__bottom">
-        <span className="footer__copy">All rights reserved</span>
+        <span className="footer__copy">All rights reserved © 2026 Fan X Charms</span>
         <span className="footer__legal">
           <Link to="/privacy">Privacy Policy</Link>
           {' / '}

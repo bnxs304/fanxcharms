@@ -29,7 +29,7 @@
   border: 1px solid #f59e0b;
   border-radius: var(--radius);
   font-size: 0.95rem;
-  color: #92400e;
+  color: var(--warning);
 }
 
 .checkout__canceled-notice p {
@@ -134,7 +134,7 @@
 }
 
 .checkout__rates-error {
-  color: #b91c1c;
+  color: var(--error);
 }
 
 .checkout__rates {
@@ -173,7 +173,7 @@
   padding: 0;
   margin: 0 0 1rem;
   font-size: 0.9rem;
-  color: #b91c1c;
+  color: var(--error);
 }
 
 .checkout__errors li {
@@ -216,20 +216,20 @@
 .checkout__validation--verified {
   background: #ecfdf5;
   border: 1px solid #10b981;
-  color: #065f46;
+  color: var(--success);
 }
 
 .checkout__validation--warning {
   background: #fffbeb;
   border: 1px solid #f59e0b;
-  color: #92400e;
+  color: var(--warning);
 }
 
 .checkout__validation--error,
 .checkout__validation--unverified {
   background: #fef2f2;
   border: 1px solid #ef4444;
-  color: #b91c1c;
+  color: var(--error);
 }
 
 .checkout__validation-status {
@@ -351,7 +351,7 @@
 
 .checkout__error {
   font-size: 0.9rem;
-  color: #b91c1c;
+  color: var(--error);
   margin-bottom: 1rem;
   padding: 0.5rem 0;
 }

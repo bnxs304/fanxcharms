@@ -1,19 +1,24 @@
 :root {
-  --bg: #ffffff;
+  --bg: #f8f6fc;
   --bg-card: #fff;
-  --text: #1f2937;
-  --text-muted: #6b7280;
-  --primary: #7c3aed;
-  --primary-dark: #6d28d9;
-  --primary-light: #c4b5fd;
+  --text: #2d2a3a;
+  --text-muted: #6b6578;
+  --text-strong: #1e1b28;
+  --primary: #8c52f8;
+  --primary-dark: #8c52ff;
+  --primary-shadow: #d395ff;
+  --primary-light: #e2a9f1;
   --primary-pale: #ede9fe;
   --accent: var(--primary);
-  --accent-soft: #a78bfa;
-  --border: #e5e7eb;
+  --accent-soft: #d395ff;
+  --border: #e2dfe8;
+  --error: #9b2d2d;
+  --warning: #92400e;
+  --success: #065f46;
   --radius: 16px;
   --radius-lg: 24px;
   --font-sans: 'Outfit', system-ui, sans-serif;
-  --font-display: 'Varela Round', var(--font-sans);
+  --font-display: 'Red Rose', var(--font-sans);
 }
 
 * {
@@ -26,8 +31,13 @@ body {
   font-family: var(--font-sans);
   background: var(--bg);
   color: var(--text);
-  line-height: 1.5;
+  line-height: 1.6;
   min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  color: var(--text-strong);
 }
 
 #root {
@@ -37,6 +47,19 @@ body {
 a {
   color: inherit;
   text-decoration: none;
+  transition: color 0.15s ease, text-decoration-color 0.15s ease;
+}
+
+a:hover {
+  color: var(--primary-dark);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+a:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 button {

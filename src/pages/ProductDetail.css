@@ -168,7 +168,7 @@
 .product-detail__out-of-stock {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #b91c1c;
+  color: var(--error);
   margin-bottom: 0.75rem;
 }
 
