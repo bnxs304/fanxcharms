@@ -29,3 +29,16 @@
 .footer__legal a:hover {
   color: var(--primary);
 }
+
+.footer__credit {
+  font-size: 0.6rem;
+  opacity: 0.9;
+}
+
+.footer__credit a {
+  color: var(--text-muted);
+}
+
+.footer__credit a:hover {
+  color: var(--primary);
+}
