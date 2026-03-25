@@ -137,7 +137,8 @@ export default function AdminOrderDetail() {
         <ul className="admin__order-items">
           {order.items?.map((item, i) => (
             <li key={i}>
-              {item.name} × {item.quantity} {item.size && `(${item.size})`} — £{(item.price * item.quantity).toFixed(2)}
+              {item.name} × {item.quantity}{' '}
+              {item.size && `(${item.optionKind === 'variant' ? 'Variation' : 'Size'}: ${item.size})`} — £{(item.price * item.quantity).toFixed(2)}
             </li>
           ))}
         </ul>

@@ -11,6 +11,7 @@ import {
   updateDoc,
   deleteDoc,
   serverTimestamp,
+  writeBatch,
 } from 'firebase/firestore'
 import { db, isConfigured } from './firebase'
 import { products as staticProducts, getProductById as getStaticById } from '../data/products'
@@ -39,10 +40,25 @@ function normalizeImages(d) {
   }
 }
 
+/** Sort by ascending listOrder; missing listOrder sorts after, by name. */
+export function sortProductsByListOrder(list) {
+  return [...list].sort((a, b) => {
+    const ao = a.listOrder
+    const bo = b.listOrder
+    if (typeof ao === 'number' && typeof bo === 'number' && ao !== bo) return ao - bo
+    if (typeof ao === 'number' && typeof bo !== 'number') return -1
+    if (typeof ao !== 'number' && typeof bo === 'number') return 1
+    return (a.name || '').localeCompare(b.name || '')
+  })
+}
+
 function snapshotToProduct(docSnap) {
   if (!docSnap.exists()) return null
   const d = docSnap.data()
   const { images, image } = normalizeImages(d)
+  const listOrderRaw = d.listOrder
+  const listOrder =
+    typeof listOrderRaw === 'number' && !Number.isNaN(listOrderRaw) ? listOrderRaw : undefined
   const variants = Array.isArray(d.variants)
     ? d.variants
         .map((v) => ({
@@ -65,6 +81,8 @@ function snapshotToProduct(docSnap) {
     sizes: Array.isArray(d.sizes) ? d.sizes : ['One Size'],
     stock: d.stock != null ? Number(d.stock) : undefined,
     variants,
+    listOrder,
+    enabled: d.enabled !== false,
   }
 }
 
@@ -74,8 +92,7 @@ export async function getProductsFromFirestore() {
   try {
     const snap = await getDocs(collection(db, COLLECTION))
     const list = snap.docs.map((d) => snapshotToProduct(d))
-    list.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
-    return list
+    return sortProductsByListOrder(list)
   } catch (e) {
     console.warn('Firestore getProducts failed:', e.message)
     return []
@@ -95,6 +112,16 @@ export async function getProductByIdFromFirestore(id) {
   }
 }
 
+async function getNextListOrder() {
+  const snap = await getDocs(collection(db, COLLECTION))
+  let max = -1
+  snap.docs.forEach((d) => {
+    const lo = d.data()?.listOrder
+    if (typeof lo === 'number' && !Number.isNaN(lo) && lo > max) max = lo
+  })
+  return max + 1
+}
+
 /** Create product (admin). Requires auth. Returns new doc id. */
 export async function createProduct(data) {
   if (!isConfigured || !db) throw new Error('Firebase not configured')
@@ -110,6 +137,9 @@ export async function createProduct(data) {
         }))
         .filter((v) => v.size)
     : []
+  const listOrder = typeof data.listOrder === 'number' && !Number.isNaN(data.listOrder)
+    ? data.listOrder
+    : await getNextListOrder()
   const payload = {
     name: data.name,
     price: Number(data.price),
@@ -119,17 +149,21 @@ export async function createProduct(data) {
     category: data.category ?? '',
     sizes: Array.isArray(data.sizes) ? data.sizes : ['One Size'],
     stock: data.stock != null ? Number(data.stock) : null,
-     variants: variants.length ? variants : [],
+    variants: variants.length ? variants : [],
+    listOrder,
+    enabled: data.enabled !== false,
     updatedAt: serverTimestamp(),
   }
   const ref = await addDoc(collection(db, COLLECTION), payload)
   return ref.id
 }
 
-/** Update product (admin). Requires auth. */
+/** Update product (admin). Requires auth. Preserves listOrder unless passed in data. */
 export async function updateProduct(id, data) {
   if (!isConfigured || !db) throw new Error('Firebase not configured')
   const ref = doc(db, COLLECTION, id)
+  const existingSnap = await getDoc(ref)
+  const prev = existingSnap.exists() ? existingSnap.data() : {}
   const images = Array.isArray(data.images) ? data.images.filter(Boolean) : (data.image ? [data.image] : [])
   const variants = Array.isArray(data.variants)
     ? data.variants
@@ -142,6 +176,16 @@ export async function updateProduct(id, data) {
         }))
         .filter((v) => v.size)
     : []
+  const prevLo = prev.listOrder
+  const listOrder =
+    typeof data.listOrder === 'number' && !Number.isNaN(data.listOrder)
+      ? data.listOrder
+      : typeof prevLo === 'number' && !Number.isNaN(prevLo)
+        ? prevLo
+        : undefined
+  const prevEnabled = prev.enabled !== false
+  const enabled =
+    typeof data.enabled === 'boolean' ? data.enabled : prevEnabled
   const payload = {
     name: data.name,
     price: Number(data.price),
@@ -152,9 +196,21 @@ export async function updateProduct(id, data) {
     sizes: Array.isArray(data.sizes) ? data.sizes : ['One Size'],
     stock: data.stock != null ? Number(data.stock) : null,
     variants: variants.length ? variants : [],
+    enabled,
     updatedAt: serverTimestamp(),
+    ...(listOrder !== undefined ? { listOrder } : {}),
   }
   await updateDoc(ref, payload)
+}
+
+/** Toggle storefront visibility (admin). */
+export async function setProductEnabled(id, enabled) {
+  if (!isConfigured || !db) throw new Error('Firebase not configured')
+  const ref = doc(db, COLLECTION, id)
+  await updateDoc(ref, {
+    enabled: Boolean(enabled),
+    updatedAt: serverTimestamp(),
+  })
 }
 
 /** Delete product (admin). Requires auth. */
@@ -162,6 +218,11 @@ export async function deleteProduct(id) {
   if (!isConfigured || !db) throw new Error('Firebase not configured')
   const ref = doc(db, COLLECTION, id)
   await deleteDoc(ref)
+}
+
+/** True if the product should appear on the shop (default when field missing). */
+export function isProductEnabled(product) {
+  return product != null && product.enabled !== false
 }
 
 /** Ensure product has .image and .images array (for static or legacy data). */
@@ -178,18 +239,76 @@ export function withImages(product) {
   }
 }
 
-/** Public: get product by id. Tries Firestore first, then static. */
+/** Public: get product by id. Tries Firestore first, then static. Disabled products are hidden. */
 export async function getProductById(id) {
   const fromFirestore = await getProductByIdFromFirestore(id)
-  if (fromFirestore) return fromFirestore
-  return withImages(getStaticById(id))
+  if (fromFirestore) {
+    return isProductEnabled(fromFirestore) ? fromFirestore : null
+  }
+  const staticP = getStaticById(id)
+  if (!staticP) return null
+  const withImg = withImages(staticP)
+  return isProductEnabled(withImg) ? withImg : null
 }
 
-/** Public: get all products. Tries Firestore first; if empty, uses static. */
+/**
+ * Assigns listOrder 0..n-1 by current name sort when any product is missing listOrder.
+ * Call from admin before reordering. Requires auth write rules on products.
+ */
+export async function ensureProductListOrders() {
+  if (!isConfigured || !db) throw new Error('Firebase not configured')
+  const snap = await getDocs(collection(db, COLLECTION))
+  const rows = snap.docs.map((d) => ({ id: d.id, data: d.data() }))
+  if (rows.length === 0) return
+  if (rows.every(({ data }) => typeof data.listOrder === 'number' && !Number.isNaN(data.listOrder))) {
+    return
+  }
+  const sorted = [...rows].sort((a, b) =>
+    (a.data.name || '').localeCompare(b.data.name || '')
+  )
+  const batch = writeBatch(db)
+  sorted.forEach((row, i) => {
+    batch.update(doc(db, COLLECTION, row.id), {
+      listOrder: i,
+      updatedAt: serverTimestamp(),
+    })
+  })
+  await batch.commit()
+}
+
+/**
+ * Swap listOrder between two adjacent products in a sorted list (by listOrder).
+ * @param {Array<{ id: string, listOrder?: number }>} sortedProducts
+ * @param {number} index — index of item to move
+ * @param {'up' | 'down'} direction
+ */
+export async function moveProductListOrder(sortedProducts, index, direction) {
+  if (!isConfigured || !db) throw new Error('Firebase not configured')
+  const toIndex = direction === 'up' ? index - 1 : index + 1
+  if (toIndex < 0 || toIndex >= sortedProducts.length) return
+  const a = sortedProducts[index]
+  const b = sortedProducts[toIndex]
+  const loA = typeof a.listOrder === 'number' ? a.listOrder : index
+  const loB = typeof b.listOrder === 'number' ? b.listOrder : toIndex
+  const batch = writeBatch(db)
+  batch.update(doc(db, COLLECTION, a.id), { listOrder: loB, updatedAt: serverTimestamp() })
+  batch.update(doc(db, COLLECTION, b.id), { listOrder: loA, updatedAt: serverTimestamp() })
+  await batch.commit()
+}
+
+/** Public: enabled products only. Tries Firestore first; if empty, uses static. */
 export async function getProducts() {
   const fromFirestore = await getProductsFromFirestore()
-  if (fromFirestore.length > 0) return fromFirestore
-  return staticProducts.map(withImages)
+  if (fromFirestore.length > 0) {
+    return sortProductsByListOrder(fromFirestore.filter(isProductEnabled))
+  }
+  const list = staticProducts.map((p, i) =>
+    withImages({
+      ...p,
+      listOrder: typeof p.listOrder === 'number' ? p.listOrder : i,
+    })
+  )
+  return sortProductsByListOrder(list.filter(isProductEnabled))
 }
 
 /** In-stock check (works for both Firestore and static shape). Stock 0 = out of stock; null/undefined = no limit. */
@@ -209,23 +328,3 @@ export function isInStock(product) {
   return !Number.isNaN(n) && n > 0
 }
 
-/** Seed Firestore with static products (admin only). Creates new docs; does not overwrite. */
-export async function seedStaticProducts() {
-  if (!isConfigured || !db) throw new Error('Firebase not configured')
-  const created = []
-  for (const p of staticProducts) {
-    const images = Array.isArray(p.images) ? p.images : (p.image ? [p.image] : [])
-    const id = await createProduct({
-      name: p.name,
-      price: p.price,
-      description: p.description,
-      image: p.image,
-      images,
-      category: p.category,
-      sizes: p.sizes,
-      stock: p.stock,
-    })
-    created.push(id)
-  }
-  return created
-}

@@ -1,7 +1,15 @@
 import { CONTACT_EMAIL } from '../constants/site'
+import { useSeo } from '../utils/useSeo'
 import './PolicyPage.css'
 
 export default function ReturnsRefunds() {
+  const origin = typeof window !== 'undefined' ? window.location.origin : ''
+  useSeo({
+    title: 'Returns & Refunds - Fan X Charms',
+    description: 'Our returns and refund policy for Fan X Charms orders.',
+    canonical: origin ? `${origin}/returns-refunds` : undefined,
+  })
+
   return (
     <div className="policy-page">
       <h1 className="policy-page__title">Returns & Refund Policy</h1>

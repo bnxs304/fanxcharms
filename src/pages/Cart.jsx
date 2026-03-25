@@ -26,7 +26,9 @@ export default function Cart() {
             </div>
             <div className="cart-item__details">
               <h3 className="cart-item__name">{item.name}</h3>
-              <p className="cart-item__meta">Size: {item.size} · £{item.price.toFixed(2)}</p>
+              <p className="cart-item__meta">
+                {item.optionKind === 'variant' ? 'Variation' : 'Size'}: {item.size} · £{item.price.toFixed(2)}
+              </p>
               <div className="cart-item__actions">
                 <div className="cart-item__qty">
                   <button

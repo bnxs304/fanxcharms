@@ -36,6 +36,7 @@ const defaultProduct = {
   sizes: 'One Size',
   stock: '',
   variants: [],
+  enabled: true,
 }
 
 export default function AdminProductForm() {
@@ -80,6 +81,7 @@ export default function AdminProductForm() {
             sizes: Array.isArray(p.sizes) ? p.sizes.join(', ') : 'One Size',
             stock: p.stock != null ? String(p.stock) : '',
             variants,
+            enabled: p.enabled !== false,
           })
         }
       })
@@ -87,8 +89,11 @@ export default function AdminProductForm() {
   }, [id, isNew, user, authLoading, navigate])
 
   const handleChange = (e) => {
-    const { name, value } = e.target
-    setForm((prev) => ({ ...prev, [name]: value }))
+    const { name, value, type, checked } = e.target
+    setForm((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }))
   }
 
   const removeImage = (index) => {
@@ -150,6 +155,7 @@ export default function AdminProductForm() {
       sizes: sizes.length ? sizes : ['One Size'],
       stock: form.stock === '' ? null : parseInt(form.stock, 10),
       variants,
+      enabled: form.enabled !== false,
     }
     try {
       if (isNew) {
@@ -178,6 +184,18 @@ export default function AdminProductForm() {
 
       <form onSubmit={handleSubmit} className="admin__form admin__form--wide">
         {error && <p className="admin__error" role="alert">{error}</p>}
+        <div className="admin__field admin__field--checkbox">
+          <label className="admin__checkbox-label">
+            <input
+              type="checkbox"
+              name="enabled"
+              checked={form.enabled !== false}
+              onChange={handleChange}
+            />
+            <span>Show on storefront</span>
+          </label>
+          <p className="admin__hint">When off, this product is hidden from the shop, search, and home page.</p>
+        </div>
         <div className="admin__field">
           <label htmlFor="name">Name</label>
           <input id="name" name="name" value={form.name} onChange={handleChange} required />

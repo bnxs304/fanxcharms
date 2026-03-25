@@ -1,23 +1,34 @@
 import { useSearchParams } from 'react-router-dom'
 import { useProducts } from '../hooks/useProducts'
 import { productMatchesCategory } from '../data/categories'
+import { productMatchesSearch } from '../utils/searchMatch'
+import { useSeo } from '../utils/useSeo'
 import ProductCard from '../components/ProductCard'
 import './Shop.css'
-
-function productMatchesSearch(product, query) {
-  if (!query || !query.trim()) return true
-  const q = query.trim().toLowerCase()
-  const name = (product.name || '').toLowerCase()
-  const desc = (product.description || '').toLowerCase()
-  const cat = (product.category || '').toLowerCase()
-  return name.includes(q) || desc.includes(q) || cat.includes(q)
-}
 
 export default function Shop() {
   const [searchParams] = useSearchParams()
   const catParam = searchParams.get('cat') || ''
   const searchQuery = searchParams.get('q') || ''
   const { products, loading, error } = useProducts()
+
+  const origin = typeof window !== 'undefined' ? window.location.origin : ''
+  const catLabel =
+    catParam === 'anime' ? 'Anime'
+      : catParam === 'k-pop' ? 'K-Pop'
+        : catParam === 'gaming' ? 'Gaming'
+          : catParam === 'others' ? 'More products'
+            : 'Shop'
+  const title = `${catLabel}${searchQuery ? ` - “${searchQuery}”` : ''} - Fan X Charms`
+  const description = searchQuery
+    ? `Browse ${catLabel} merchandise and search for “${searchQuery}”.`
+    : `Shop ${catLabel} merchandise. Anime, K-Pop & gaming collectibles.`
+  useSeo({
+    title,
+    description,
+    canonical: origin ? `${origin}/shop` : undefined,
+  })
+
   const byCategory = catParam
     ? products.filter((p) => productMatchesCategory(p, catParam))
     : products

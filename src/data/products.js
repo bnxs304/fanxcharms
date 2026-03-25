@@ -6,6 +6,7 @@
 export const products = [
   {
     id: '1',
+    listOrder: 0,
     name: 'Luna Moon Charm',
     price: 24.99,
     description: 'Handcrafted sterling silver moon charm. Perfect for layering or as a standalone piece.',
@@ -16,6 +17,7 @@ export const products = [
   },
   {
     id: '2',
+    listOrder: 1,
     name: 'Star Cluster Pendant',
     price: 32.00,
     description: 'Delicate star cluster in gold-plated brass. A subtle statement for everyday wear.',
@@ -26,6 +28,7 @@ export const products = [
   },
   {
     id: '3',
+    listOrder: 2,
     name: 'Pearl Drop Earrings',
     price: 28.50,
     description: 'Freshwater pearl drops on sterling silver hooks. Elegant and timeless.',
@@ -36,6 +39,7 @@ export const products = [
   },
   {
     id: '4',
+    listOrder: 3,
     name: 'Braided Ring Set',
     price: 45.00,
     description: 'Set of three thin braided bands. Mix and match or stack for a custom look.',
@@ -46,6 +50,7 @@ export const products = [
   },
   {
     id: '5',
+    listOrder: 4,
     name: 'Leaf Charm Bracelet',
     price: 38.00,
     description: 'Sterling silver leaf charms on an adjustable chain. Nature-inspired everyday piece.',
@@ -56,6 +61,7 @@ export const products = [
   },
   {
     id: '6',
+    listOrder: 5,
     name: 'Hamsa Pendant',
     price: 29.99,
     description: 'Protective Hamsa symbol in oxidized silver. A meaningful gift or personal talisman.',

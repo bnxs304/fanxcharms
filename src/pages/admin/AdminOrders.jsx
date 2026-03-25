@@ -1,7 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { getOrdersFromFirestore, updateOrderStatus } from '../../lib/ordersService'
+import {
+  normalizeAdminSearchQuery,
+  adminSearchMatches,
+  orderAdminSearchHaystack,
+} from '../../utils/adminSearch'
 import './Admin.css'
 
 const STATUS_OPTIONS = [
@@ -24,6 +29,14 @@ export default function AdminOrders() {
   const [loading, setLoading] = useState(true)
   const [updatingId, setUpdatingId] = useState(null)
   const [statusFilter, setStatusFilter] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+
+  const searchNorm = useMemo(() => normalizeAdminSearchQuery(searchQuery), [searchQuery])
+  const filteredOrders = useMemo(() => {
+    return orders
+      .filter((o) => !statusFilter || (o.status || 'pending') === statusFilter)
+      .filter((o) => adminSearchMatches(orderAdminSearchHaystack(o), searchNorm))
+  }, [orders, statusFilter, searchNorm])
 
   useEffect(() => {
     if (!user) return
@@ -71,20 +84,37 @@ export default function AdminOrders() {
         <p className="admin__empty">No orders yet.</p>
       ) : (
         <>
-          <div className="admin__filter">
-            <label htmlFor="admin-status-filter" className="admin__filter-label">Filter</label>
-            <select
-              id="admin-status-filter"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="admin__select admin__select--filter"
-              aria-label="Filter orders by status"
-            >
-              {FILTER_OPTIONS.map((opt) => (
-                <option key={opt.value || 'all'} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
+          <div className="admin__toolbar admin__toolbar--orders">
+            <div className="admin__filter">
+              <label htmlFor="admin-status-filter" className="admin__filter-label">Filter</label>
+              <select
+                id="admin-status-filter"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="admin__select admin__select--filter"
+                aria-label="Filter orders by status"
+              >
+                {FILTER_OPTIONS.map((opt) => (
+                  <option key={opt.value || 'all'} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="admin__filter admin__filter--search">
+              <label htmlFor="admin-orders-search" className="admin__filter-label">Search</label>
+              <input
+                id="admin-orders-search"
+                type="search"
+                className="admin__input admin__input--search"
+                placeholder="Order ID, email, name, items…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                aria-label="Search orders"
+              />
+            </div>
           </div>
+          {filteredOrders.length === 0 ? (
+            <p className="admin__empty">No orders match your filters.</p>
+          ) : (
           <div className="admin__table-wrap">
           <table className="admin__table">
             <thead>
@@ -98,9 +128,7 @@ export default function AdminOrders() {
               </tr>
             </thead>
             <tbody>
-              {orders
-                .filter((o) => !statusFilter || (o.status || 'pending') === statusFilter)
-                .map((o) => (
+              {filteredOrders.map((o) => (
                 <tr key={o.id}>
                   <td>
                     <code className="admin__order-id">{o.id}</code>
@@ -140,6 +168,7 @@ export default function AdminOrders() {
             </tbody>
           </table>
           </div>
+          )}
         </>
       )}
     </div>

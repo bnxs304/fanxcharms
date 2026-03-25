@@ -1,7 +1,15 @@
 import { CONTACT_EMAIL } from '../constants/site'
+import { useSeo } from '../utils/useSeo'
 import './PolicyPage.css'
 
 export default function Terms() {
+  const origin = typeof window !== 'undefined' ? window.location.origin : ''
+  useSeo({
+    title: 'General conditions - Fan X Charms',
+    description: 'Read the general conditions and terms for purchasing from Fan X Charms.',
+    canonical: origin ? `${origin}/terms` : undefined,
+  })
+
   return (
     <div className="policy-page">
       <h1 className="policy-page__title">General Conditions</h1>

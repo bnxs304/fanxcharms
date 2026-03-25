@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useProduct } from '../hooks/useProduct'
 import { isInStock } from '../lib/productsService'
 import { useCart } from '../context/CartContext'
+import { useSeo } from '../utils/useSeo'
 import './ProductDetail.css'
 
 export default function ProductDetail() {
@@ -15,6 +16,16 @@ export default function ProductDetail() {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const images = (product?.images?.length ? product.images : product?.image ? [product.image] : [])
   const variants = Array.isArray(product?.variants) ? product.variants : []
+
+  const origin = typeof window !== 'undefined' ? window.location.origin : ''
+  useSeo({
+    title: product?.name ? `${product.name} - Fan X Charms` : 'Fan X Charms',
+    description: product?.description
+      ? product.description
+      : 'Official anime, K-Pop & gaming merchandise. Shop charms, figures and collectibles.',
+    canonical: origin && id ? `${origin}/product/${id}` : undefined,
+    image: product?.image,
+  })
 
   const sizeOptions = variants.length
     ? [...new Set(variants.map((v) => v?.size).filter(Boolean))]
@@ -54,6 +65,7 @@ export default function ProductDetail() {
       price: product.price,
       image: product.image,
       size,
+      optionKind: variants.length > 0 ? 'variant' : 'size',
       maxQuantity,
     })
     setAdded(true)
@@ -148,7 +160,7 @@ export default function ProductDetail() {
           )}
           {sizeOptions?.length > 1 && (
             <div className="product-detail__sizes">
-              <span className="product-detail__label">Size</span>
+              <span className="product-detail__label">{variants.length > 0 ? 'Variation' : 'Size'}</span>
               <div className="product-detail__size-options">
                 {sizeOptions.map((s) => (
                   <button

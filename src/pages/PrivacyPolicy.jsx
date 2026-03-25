@@ -1,7 +1,15 @@
 import { CONTACT_EMAIL } from '../constants/site'
+import { useSeo } from '../utils/useSeo'
 import './PolicyPage.css'
 
 export default function PrivacyPolicy() {
+  const origin = typeof window !== 'undefined' ? window.location.origin : ''
+  useSeo({
+    title: 'Privacy Policy - Fan X Charms',
+    description: 'Learn how Fan X Charms collects, uses, and protects personal data.',
+    canonical: origin ? `${origin}/privacy` : undefined,
+  })
+
   return (
     <div className="policy-page">
       <h1 className="policy-page__title">Privacy Policy</h1>

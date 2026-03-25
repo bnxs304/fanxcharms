@@ -274,6 +274,12 @@
   border-color: var(--error);
 }
 
+.admin__btn--success {
+  border-color: color-mix(in srgb, var(--text) 20%, transparent);
+  color: var(--text);
+  background: color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
 .admin__btn--danger:hover {
   background: #fef2f2;
 }
@@ -288,11 +294,42 @@
   color: var(--text-muted);
 }
 
+.admin__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.admin__toolbar .admin__filter {
+  margin-bottom: 0;
+}
+
+.admin__toolbar--orders {
+  align-items: flex-end;
+}
+
 .admin__filter {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   margin-bottom: 1rem;
+}
+
+.admin__filter--search {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.admin__filter--search .admin__input--search {
+  flex: 1;
+  min-width: 0;
+  max-width: 420px;
+}
+
+.admin__input--search {
+  width: 100%;
 }
 
 .admin__filter-label {
@@ -383,4 +420,39 @@
 
 .admin__order-items li:last-child {
   border-bottom: none;
+}
+
+.admin__order-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: flex-start;
+}
+
+.admin__order-btn {
+  min-width: 2rem;
+  padding: 0.2rem 0.45rem;
+  line-height: 1.2;
+}
+
+.admin__table-row--disabled {
+  opacity: 0.7;
+}
+
+.admin__field--checkbox {
+  margin-bottom: 1rem;
+}
+
+.admin__checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.admin__checkbox-label input {
+  width: 1rem;
+  height: 1rem;
 }

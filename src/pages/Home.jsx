@@ -4,6 +4,7 @@ import { useProducts } from '../hooks/useProducts'
 import { useCart } from '../context/CartContext'
 import { confirmOrderPaid } from '../lib/ordersService'
 import { CONTACT_EMAIL } from '../constants/site'
+import { useSeo } from '../utils/useSeo'
 import './Home.css'
 
 function ProductCard({ product, isFocused }) {
@@ -30,6 +31,15 @@ export default function Home() {
   const [focusedIndex, setFocusedIndex] = useState(0)
   const lastIndexRef = useRef(0)
   const [confirmFailed, setConfirmFailed] = useState(false)
+
+  const origin = typeof window !== 'undefined' ? window.location.origin : ''
+  useSeo({
+    title: orderSuccess ? 'Order confirmed - Fan X Charms' : 'Fan X Charms — Anime, K-Pop & Gaming Merchandise',
+    description: orderSuccess
+      ? `Thank you for your order. Track your order using reference ${orderId || '—'}.`
+      : 'Fan X Charms — Anime, K-Pop & Gaming merchandise. Official lightsticks, figures and collectibles.',
+    canonical: origin ? `${origin}/` : undefined,
+  })
 
   const scrollToCard = (index) => {
     const el = scrollRef.current

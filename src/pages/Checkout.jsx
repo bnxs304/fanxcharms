@@ -5,6 +5,7 @@ import { createOrder } from '../lib/ordersService'
 import { createStripeCheckout } from '../lib/stripeCheckout'
 import { getShippingRates } from '../lib/shippingRatesService'
 import { CONTACT_EMAIL } from '../constants/site'
+import { useSeo } from '../utils/useSeo'
 import './Checkout.css'
 
 const COUNTRY_OPTIONS = [
@@ -73,6 +74,14 @@ export default function Checkout() {
   const { cart, cartTotal, clearCart } = useCart()
   const [searchParams, setSearchParams] = useSearchParams()
   const canceled = searchParams.get('canceled') === '1'
+
+  const origin = typeof window !== 'undefined' ? window.location.origin : ''
+  useSeo({
+    title: 'Checkout - Fan X Charms',
+    description: 'Secure checkout for Fan X Charms merchandise. Pay with Stripe.',
+    canonical: origin ? `${origin}/checkout` : undefined,
+  })
+
   const [email, setEmail] = useState('')
   const [confirmEmail, setConfirmEmail] = useState('')
   const [name, setName] = useState('')
@@ -153,6 +162,7 @@ export default function Checkout() {
           price: i.price,
           quantity: i.quantity,
           size: i.size ?? 'One Size',
+          ...(i.optionKind ? { optionKind: i.optionKind } : {}),
           image: i.image ?? '',
         })),
         total: orderTotal,

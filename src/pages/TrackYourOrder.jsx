@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getOrderForCustomer } from '../lib/ordersService'
+import { useSeo } from '../utils/useSeo'
 import './TrackYourOrder.css'
 
 const STATUS_LABELS = {
@@ -19,6 +20,13 @@ export default function TrackYourOrder() {
   const [order, setOrder] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+
+  const origin = typeof window !== 'undefined' ? window.location.origin : ''
+  useSeo({
+    title: 'Track your order - Fan X Charms',
+    description: 'Enter your order reference and email to check the latest status of your Fan X Charms order.',
+    canonical: origin ? `${origin}/track-your-order` : undefined,
+  })
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -117,7 +125,8 @@ export default function TrackYourOrder() {
           <ul className="track-order__items">
             {order.items?.map((item, i) => (
               <li key={i}>
-                {item.name} × {item.quantity} {item.size && `(${item.size})`} — £{(item.price * item.quantity).toFixed(2)}
+                {item.name} × {item.quantity}{' '}
+                {item.size && `(${item.optionKind === 'variant' ? 'Variation' : 'Size'}: ${item.size})`} — £{(item.price * item.quantity).toFixed(2)}
               </li>
             ))}
           </ul>

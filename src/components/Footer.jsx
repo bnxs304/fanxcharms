@@ -5,6 +5,35 @@ import './Footer.css'
 export default function Footer() {
   return (
     <footer className="footer">
+      <div className="footer__top">
+        <div className="footer__col">
+          <h3 className="footer__heading">Secure checkout</h3>
+          <p className="footer__text">Payments are encrypted with SSL (HTTPS).</p>
+          <p className="footer__text">Processed securely by Stripe.</p>
+          <p className="footer__text">PCI DSS compliant payments.</p>
+        </div>
+
+        <div className="footer__col">
+          <h3 className="footer__heading">Socials</h3>
+          <div className="footer__links">
+            <a href="https://instagram.com/fanxcharms" target="_blank" rel="noopener noreferrer" className="footer__link" aria-label="Instagram">
+              Instagram
+            </a>
+            <a href="https://tiktok.com/@fanxcharms" target="_blank" rel="noopener noreferrer" className="footer__link" aria-label="TikTok">
+              TikTok
+            </a>
+          </div>
+        </div>
+
+        <div className="footer__col">
+          <h3 className="footer__heading">Customer care</h3>
+          <div className="footer__links">
+            <Link to="/track-your-order" className="footer__link">Track your order</Link>
+            <Link to="/returns-refunds" className="footer__link">Returns &amp; Refunds</Link>
+            <a href={`mailto:${CONTACT_EMAIL}`} className="footer__link">{CONTACT_EMAIL}</a>
+          </div>
+        </div>
+      </div>
       <div className="footer__bottom">
         <span className="footer__copy">All rights reserved © 2026 Fan X Charms</span>
         <span className="footer__legal">

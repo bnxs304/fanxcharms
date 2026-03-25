@@ -42,22 +42,31 @@ function initFirebase() {
 
 const db = initFirebase()
 
+function normalizeFrontendUrl(url) {
+  const raw = (url || '').trim()
+  if (!raw) return 'https://fanxcharms.com'
+  const hasScheme = /^https?:\/\//i.test(raw)
+  const withScheme = hasScheme ? raw : `https://${raw}`
+  return withScheme.replace(/\/$/, '')
+}
+
 function getEmailLogoUrl() {
   const explicit = process.env.EMAIL_LOGO_URL
   if (explicit && explicit.trim()) return explicit.trim()
-  const base = (process.env.FRONTEND_URL || 'https://fanxcharms.com').replace(/\/$/, '')
+  const base = normalizeFrontendUrl(process.env.FRONTEND_URL || 'https://fanxcharms.com')
   // Fallback path – update EMAIL_LOGO_URL in env if you host the logo elsewhere.
   return `${base}/logo-email.png`
 }
 
 function renderEmailLayout({ title, bodyHtml, showManageLink, orderId }) {
-  const frontend = (process.env.FRONTEND_URL || 'https://fanxcharms.com').replace(/\/$/, '')
+  const frontend = normalizeFrontendUrl(process.env.FRONTEND_URL || 'https://fanxcharms.com')
   const manageUrl = `${frontend}/admin`
   return `
 <!doctype html>
 <html>
   <head>
     <meta charset="utf-8" />
+    <meta name="color-scheme" content="light dark" />
     <title>${title}</title>
     <style>
       body { margin:0; padding:0; background:#f5f3ff; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:#0f172a; }
@@ -80,6 +89,25 @@ function renderEmailLayout({ title, bodyHtml, showManageLink, orderId }) {
       .key-line { font-weight:600; color:#4b5563; }
       a { color:#4f46e5; }
       pre { background:#f9fafb; padding:10px 12px; border-radius:8px; font-size:12px; white-space:pre-wrap; }
+
+      /* Dark mode (best-effort; supported by most modern email clients). */
+      @media (prefers-color-scheme: dark) {
+        body { background:#0b1220 !important; color:#e5e7eb !important; }
+        .container { background:#0f172a !important; box-shadow:0 8px 30px rgba(0,0,0,0.35); }
+        .header { border-bottom:1px solid rgba(229,231,235,0.12) !important; background:linear-gradient(135deg,#0b1220,#111827) !important; }
+        .title { color:#f8fafc !important; }
+        .body { color:#e5e7eb !important; }
+        .section-title { color:#f8fafc !important; }
+        .summary-table th { color: rgba(229,231,235,0.65) !important; }
+        .summary-table td { color:#f8fafc !important; }
+        .divider { border-top:1px solid rgba(229,231,235,0.12) !important; }
+        .muted { color: rgba(229,231,235,0.7) !important; }
+        .footer { background:#0b1220 !important; color: rgba(229,231,235,0.7) !important; }
+        .key-line { color: rgba(229,231,235,0.8) !important; }
+        a { color:#a78bfa !important; }
+        .btn { background:#6d28d9 !important; }
+        pre { background: rgba(17,24,39,0.9) !important; color:#e5e7eb !important; }
+      }
     </style>
   </head>
   <body>
@@ -113,7 +141,7 @@ async function sendOrderConfirmationEmail(orderId, order) {
   if (!apiKey) return
   const to = order.email
   const subject = `Order confirmation #${orderId} – Fan X Charms`
-  const frontend = (process.env.FRONTEND_URL || 'https://fanxcharms.com').replace(/\/$/, '')
+  const frontend = normalizeFrontendUrl(process.env.FRONTEND_URL || 'https://fanxcharms.com')
   const itemsList = (order.items || [])
     .map(
       (i) =>
@@ -196,7 +224,7 @@ async function sendOrderShippedEmail(orderId, order) {
     (order.carrier || order.trackingNumber)
       ? `<tr><th scope="row">Tracking</th><td>${(order.carrier || '').trim()} ${(order.trackingNumber || '').trim()}</td></tr>`
       : ''
-  const frontend = (process.env.FRONTEND_URL || 'https://fanxcharms.com').replace(/\/$/, '')
+  const frontend = normalizeFrontendUrl(process.env.FRONTEND_URL || 'https://fanxcharms.com')
   const bodyHtml = `
     <p>Hi${order.name ? ` ${order.name.split(' ')[0]}` : ''},</p>
     <p>Good news – your <strong>Fan X Charms</strong> order is on the way.</p>
@@ -251,7 +279,7 @@ async function sendNewOrderNotificationToShop(orderId, order) {
   const to = SHOP_NOTIFICATION_EMAIL
   const subject = `New order #${orderId} – Fan X Charms`
   const itemsList = (order.items || []).map((i) => `  • ${i.name} × ${i.quantity} — £${(i.price * i.quantity).toFixed(2)}`).join('\n')
-  const frontend = (process.env.FRONTEND_URL || 'https://fanxcharms.com').replace(/\/$/, '')
+  const frontend = normalizeFrontendUrl(process.env.FRONTEND_URL || 'https://fanxcharms.com')
   const bodyHtml = `
     <p><strong>A new order has been paid.</strong></p>
     <p class="key-line">Order reference: ${orderId}</p>
@@ -485,7 +513,7 @@ app.post('/api/create-stripe-checkout', async (req, res) => {
 
   const stripe = new Stripe(secretKey)
   const amountCents = Math.round(Number(amount) * 100)
-  const baseSuccessUrl = success_url || `${(process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '')}/?order=success&orderId=${encodeURIComponent(orderId)}`
+  const baseSuccessUrl = success_url || `${normalizeFrontendUrl(process.env.FRONTEND_URL || 'http://localhost:5173')}/?order=success&orderId=${encodeURIComponent(orderId)}`
   const finalSuccessUrl = baseSuccessUrl.includes('{CHECKOUT_SESSION_ID}') ? baseSuccessUrl : `${baseSuccessUrl}${baseSuccessUrl.includes('?') ? '&' : '?'}session_id={CHECKOUT_SESSION_ID}`
 
   try {
@@ -506,7 +534,7 @@ app.post('/api/create-stripe-checkout', async (req, res) => {
         },
       ],
       success_url: finalSuccessUrl,
-      cancel_url: cancel_url || `${(process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '')}/checkout`,
+      cancel_url: cancel_url || `${normalizeFrontendUrl(process.env.FRONTEND_URL || 'http://localhost:5173')}/checkout`,
       client_reference_id: String(orderId),
       metadata: { orderId: String(orderId) },
     })
@@ -556,6 +584,9 @@ app.post('/api/orders', async (req, res) => {
       price: Number(i.price),
       quantity: Number(i.quantity) || 1,
       size: i.size ?? 'One Size',
+      ...(i.optionKind !== undefined && i.optionKind !== null
+        ? { optionKind: i.optionKind === 'variant' ? 'variant' : 'size' }
+        : {}),
       image: i.image ?? '',
     })),
     total: Number(total),
