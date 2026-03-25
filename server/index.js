@@ -43,7 +43,12 @@ function initFirebase() {
 const db = initFirebase()
 
 function normalizeFrontendUrl(url) {
-  const raw = (url || '').trim()
+  // Some env vars are accidentally provided as comma-separated lists (e.g. for CORS).
+  // Emails must use a single canonical base URL.
+  const raw = (url || '')
+    .split(',')
+    .map((s) => (s || '').trim())
+    .filter(Boolean)[0]
   if (!raw) return 'https://fanxcharms.com'
   const hasScheme = /^https?:\/\//i.test(raw)
   const withScheme = hasScheme ? raw : `https://${raw}`
@@ -72,7 +77,8 @@ function renderEmailLayout({ title, bodyHtml, showManageLink, orderId }) {
       body { margin:0; padding:0; background:#f5f3ff; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:#0f172a; }
       .wrapper { width:100%; padding:24px 0; }
       .container { max-width:640px; margin:0 auto; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 8px 30px rgba(15,23,42,0.12); }
-      .header { padding:20px 28px 16px; border-bottom:1px solid #e5e7eb; background:linear-gradient(135deg,#f5f3ff,#eef2ff); }
+      /* Use solid background (not gradient) for better iOS dark-mode inversion. */
+      .header { padding:20px 28px 16px; border-bottom:1px solid #e5e7eb; background:#f5f3ff; }
       .logo { height:40px; display:block; }
       .title { margin:16px 0 0; font-size:20px; font-weight:700; color:#111827; }
       .body { padding:24px 28px 28px; font-size:14px; line-height:1.6; }
@@ -94,7 +100,7 @@ function renderEmailLayout({ title, bodyHtml, showManageLink, orderId }) {
       @media (prefers-color-scheme: dark) {
         body { background:#0b1220 !important; color:#e5e7eb !important; }
         .container { background:#0f172a !important; box-shadow:0 8px 30px rgba(0,0,0,0.35); }
-        .header { border-bottom:1px solid rgba(229,231,235,0.12) !important; background:linear-gradient(135deg,#0b1220,#111827) !important; }
+        .header { border-bottom:1px solid rgba(229,231,235,0.12) !important; background:#0b1220 !important; }
         .title { color:#f8fafc !important; }
         .body { color:#e5e7eb !important; }
         .section-title { color:#f8fafc !important; }
